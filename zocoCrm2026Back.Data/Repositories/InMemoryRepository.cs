@@ -30,6 +30,74 @@ public class InMemoryRepository : IRepository
                     FechaCreacion = new DateTime(2026, 9, 1, 8, 0, 0, DateTimeKind.Utc),
                     FechaActualizacion = new DateTime(2026, 9, 20, 15, 30, 0, DateTimeKind.Utc)
                 }
+            },
+            [typeof(Gestion)] = new List<EntityBase>
+            {
+                new Gestion
+                {
+                    Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                    ClienteId = Guid.Parse("a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
+                    TipoContacto = TipoContacto.Llamada,
+                    Comentario = "Llamada inicial, mostró interés en el producto",
+                    EstadoResultante = EstadoCliente.Contactado,
+                    FechaGestion = new DateTime(2026, 9, 1, 8, 30, 0, DateTimeKind.Utc),
+                    ProximoContacto = new DateTime(2026, 10, 5, 10, 0, 0, DateTimeKind.Utc),
+                    Asesor = "María González"
+                },
+                new Gestion
+                {
+                    Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                    ClienteId = Guid.Parse("a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
+                    TipoContacto = TipoContacto.WhatsApp,
+                    Comentario = "WhatsApp con detalles de precios y condiciones",
+                    EstadoResultante = EstadoCliente.Interesado,
+                    FechaGestion = new DateTime(2026, 9, 15, 14, 0, 0, DateTimeKind.Utc),
+                    ProximoContacto = new DateTime(2026, 10, 8, 10, 0, 0, DateTimeKind.Utc),
+                    Asesor = "María González"
+                },
+                new Gestion
+                {
+                    Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+                    ClienteId = Guid.Parse("a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
+                    TipoContacto = TipoContacto.Reunion,
+                    Comentario = "Reunión presencial para presentar el servicio",
+                    EstadoResultante = EstadoCliente.Interesado,
+                    FechaGestion = new DateTime(2026, 9, 20, 15, 30, 0, DateTimeKind.Utc),
+                    ProximoContacto = new DateTime(2026, 10, 12, 10, 0, 0, DateTimeKind.Utc),
+                    Asesor = "María González"
+                },
+                new Gestion
+                {
+                    Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
+                    ClienteId = Guid.Parse("a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
+                    TipoContacto = TipoContacto.Correo,
+                    Comentario = "Envío de propuesta comercial por correo",
+                    EstadoResultante = EstadoCliente.Interesado,
+                    FechaGestion = new DateTime(2026, 9, 22, 9, 0, 0, DateTimeKind.Utc),
+                    ProximoContacto = new DateTime(2026, 10, 15, 10, 0, 0, DateTimeKind.Utc),
+                    Asesor = "Carlos Ruiz"
+                },
+                new Gestion
+                {
+                    Id = Guid.Parse("55555555-5555-5555-5555-555555555555"),
+                    ClienteId = Guid.Parse("a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
+                    TipoContacto = TipoContacto.Otro,
+                    Comentario = "Seguimiento de consulta sobre el producto",
+                    EstadoResultante = EstadoCliente.Contactado,
+                    FechaGestion = new DateTime(2026, 9, 25, 11, 15, 0, DateTimeKind.Utc),
+                    Asesor = "Carlos Ruiz"
+                },
+                new Gestion
+                {
+                    Id = Guid.Parse("66666666-6666-6666-6666-666666666666"),
+                    ClienteId = Guid.Parse("a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
+                    TipoContacto = TipoContacto.Llamada,
+                    Comentario = "Llamada para coordinar próximo contacto",
+                    EstadoResultante = EstadoCliente.Interesado,
+                    FechaGestion = new DateTime(2026, 9, 28, 16, 0, 0, DateTimeKind.Utc),
+                    ProximoContacto = new DateTime(2026, 10, 20, 10, 0, 0, DateTimeKind.Utc),
+                    Asesor = "María González"
+                }
             }
         };
     }

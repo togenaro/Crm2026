@@ -31,4 +31,26 @@ public record GestionModel
         DateTime? ProximoContacto,
         string? Asesor
     );
+
+    public record GestionGeneralResponse(
+        Guid Id,
+        Guid ClienteId,
+        string? ClienteNombre,
+        string? ClienteCuit,
+        TipoContacto TipoContacto,
+        string? Comentario,
+        EstadoCliente EstadoResultante,
+        DateTime FechaGestion,
+        DateTime? ProximoContacto,
+        string? Asesor
+    );
+
+    public record GestionGeneralPagedResponse(
+        List<GestionGeneralResponse> Items,
+        int TotalItems,
+        int Page,
+        int PageSize,
+        int TotalPages,
+        List<string> Asesores
+    );
 }
