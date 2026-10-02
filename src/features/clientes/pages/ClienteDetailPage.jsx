@@ -8,6 +8,7 @@ import {
   IconMail,
   IconPhone,
   IconPlus,
+  IconSearch,
   IconStatus,
   IconTrendingUp,
   IconUser,
@@ -42,6 +43,7 @@ export default function ClienteDetailPage() {
   const location = useLocation();
   const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
   const [mostrarModalCliente, setMostrarModalCliente] = useState(false);
+  const [busquedaGestiones, setBusquedaGestiones] = useState('');
   const clienteListado = clientesDemo.find(cliente => cliente.id === clienteId);
   const volverAGestiones = location.state?.from === '/gestiones';
 
@@ -54,6 +56,12 @@ export default function ClienteDetailPage() {
       gestiones: gestionesDemo.filter(gestion => gestion.clienteCuit === clienteListado.cuit),
     };
   const vencido = cliente.proximoContacto < '2026-10-02';
+  const terminoBusquedaGestiones = busquedaGestiones.trim().toLocaleLowerCase('es');
+  const gestionesFiltradas = cliente.gestiones.filter(gestion => !terminoBusquedaGestiones || [
+    gestion.tipoContacto,
+    gestion.comentario,
+    gestion.asesor,
+  ].some(valor => valor?.toLocaleLowerCase('es').includes(terminoBusquedaGestiones)));
 
   return (
     <div className="full-view-container">
@@ -100,9 +108,22 @@ export default function ClienteDetailPage() {
       <section className="list-container detail-history" aria-label="Historial de gestiones">
         <div className="table-info-bar">
           <div className="table-info-bar-left">
-            <strong>Historial de Gestiones ({cliente.gestiones.length})</strong>
+            <strong>
+              Historial de Gestiones ({terminoBusquedaGestiones ? `${gestionesFiltradas.length} de ` : ''}{cliente.gestiones.length})
+            </strong>
           </div>
           <div className="table-info-bar-right">
+            <label className="search-input-wrap">
+              <IconSearch />
+              <input
+                className="search-input"
+                type="search"
+                placeholder="Buscar en el historial…"
+                aria-label="Buscar en el historial de gestiones"
+                value={busquedaGestiones}
+                onChange={event => setBusquedaGestiones(event.target.value)}
+              />
+            </label>
             <button className="btn btn-outline btn-sm" type="button" title="Cambiar orden por fecha">
               <IconArrowUpDown /> Recientes
             </button>
@@ -112,7 +133,9 @@ export default function ClienteDetailPage() {
           </div>
         </div>
         <div className="full-history-list">
-          {cliente.gestiones.map(gestion => (
+          {gestionesFiltradas.length === 0 ? (
+            <p className="pagination-info">No se encontraron gestiones con esas palabras.</p>
+          ) : gestionesFiltradas.map(gestion => (
             <GestionCard key={gestion.id} gestion={gestion} showCliente={false} />
           ))}
         </div>
