@@ -13,6 +13,14 @@ public record GestionModel
         string? Asesor = null
     );
 
+    public record GestionUpdate(
+        string? TipoContacto,
+        string? Comentario,
+        string? EstadoResultante,
+        DateTime? ProximoContacto,
+        DateTime FechaGestion
+    );
+
     public record GestionResponse(
         Guid Id,
         Guid ClienteId,
