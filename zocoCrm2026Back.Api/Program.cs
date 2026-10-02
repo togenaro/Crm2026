@@ -15,7 +15,7 @@ builder.Services.AddControllers()
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddScoped<IRepository, InMemoryRepository>();
+builder.Services.AddSingleton<IRepository, InMemoryRepository>();
 builder.Services.AddScoped<ClienteManagementService>();
 
 var app = builder.Build();
