@@ -1,272 +1,316 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  IconAlertTriangle,
-  IconCalendar,
-  IconChevronDown,
-  IconChevronUp,
-  IconSearch,
+  IconSearch, IconChevronUp, IconChevronDown,
+  IconCalendar, IconAlertTriangle, IconX,
   IconUsers,
 } from '../../../components/ui/Icons';
-import Modal from '../../../components/ui/Modal';
+import { getInitials, formatDate } from '../../../utils/helpers';
+import { ESTADOS, isOverdue, badgeClass } from '../clienteHelpers';
 import ClienteFormModal from './ClienteFormModal';
-import EmptyState from '../../../components/ui/EmptyState';
 import Pagination from '../../../components/ui/Pagination';
-import ApiErrorList from '../../../components/ui/ApiErrorList';
-import { badgeClass } from '../clienteHelpers';
-import { formatDate, getInitials } from '../../../utils/helpers';
+import EmptyState from '../../../components/ui/EmptyState';
 
 export default function ClientesTable({
-  clientes,
-  todosLosClientes,
-  totalClientes,
-  busqueda,
-  onBusquedaChange,
-  estado,
+  clientes = [],
+  pagination = { page: 1, pageSize: 5, totalPages: 1, totalItems: 0 },
+  onPageChange,
+  search = '',
+  onSearchChange,
+  estado = '',
   onEstadoChange,
-  asesor,
+  asesor = '',
   onAsesorChange,
-  asesores,
-  pagina,
-  totalPaginas,
-  onPaginaChange,
-  sortBy,
-  sortDir,
-  onOrdenar,
-  onGuardarCliente,
-  onEliminarClientes,
-  cargando,
-  loadError,
+  listaAsesores = [],
+  loadError = '',
+  loading = false,
+  onEliminar,
+  onUpdateCliente,
+  onNuevoCliente,
 }) {
   const navigate = useNavigate();
-  const [mostrarModal, setMostrarModal] = useState(false);
-  const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
-  const [clienteAEditar, setClienteAEditar] = useState(null);
-  const [seleccionados, setSeleccionados] = useState(() => new Set());
-  const [eliminando, setEliminando] = useState(false);
-  const [errorEliminacion, setErrorEliminacion] = useState('');
-  const todosSeleccionados = clientes.length > 0 && clientes.every(cliente => seleccionados.has(cliente.id));
-  const cantidadSeleccionada = seleccionados.size;
-  const clienteSeleccionado = cantidadSeleccionada === 1
-    ? todosLosClientes.find(cliente => seleccionados.has(cliente.id))
-    : null;
+  const [sortBy, setSortBy] = useState('proximo');
+  const [sortDir, setSortDir] = useState('asc');
+  const [selected, setSelected] = useState(new Set());
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
-  function activarOrdenConTeclado(event, columna) {
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    event.preventDefault();
-    onOrdenar(columna);
-  }
+  const currentPage = pagination.page || 1;
+  const totalPages = pagination.totalPages || 1;
+  const totalItems = pagination.totalItems || clientes.length;
+  const pageSize = pagination.pageSize || 5;
 
-  function alternarSeleccionTodos() {
-    setSeleccionados(actuales => {
-      const nuevaSeleccion = new Set(actuales);
-      if (todosSeleccionados) clientes.forEach(cliente => nuevaSeleccion.delete(cliente.id));
-      else clientes.forEach(cliente => nuevaSeleccion.add(cliente.id));
-      return nuevaSeleccion;
-    });
-  }
 
-  function alternarSeleccion(id) {
-    setSeleccionados(actuales => {
-      const nuevaSeleccion = new Set(actuales);
-      if (nuevaSeleccion.has(id)) nuevaSeleccion.delete(id);
-      else nuevaSeleccion.add(id);
-      return nuevaSeleccion;
-    });
-  }
+  const allSelected = clientes.length > 0 && clientes.every(c => selected.has(c.id));
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelected(prev => { const n = new Set(prev); clientes.forEach(c => n.delete(c.id)); return n; });
+    } else {
+      setSelected(prev => { const n = new Set(prev); clientes.forEach(c => n.add(c.id)); return n; });
+    }
+  };
+
+  const toggleOne = (id) => {
+    setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  };
+
+  const sortByColumn = (col) => {
+    if (col === sortBy) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(col);
+      setSortDir(col === 'actualizacion' ? 'desc' : 'asc');
+    }
+  };
+
+  const selectedCount = selected.size;
+  const clearSelection = () => setSelected(new Set());
+  const selectedClient = selectedCount === 1 ? clientes.find(c => selected.has(c.id)) : null;
+
+  const handleConfirmDelete = () => {
+    if (onEliminar) onEliminar([...selected]);
+    setSelected(new Set());
+    setShowConfirm(false);
+  };
+
+  const asesoresDropdown = [...listaAsesores].sort((a, b) => a.localeCompare(b, 'es'));
+
+  const sortedClientes = [...clientes].sort((a, b) => {
+    let valA = sortBy === 'proximo' ? a.proximoContacto : a.fechaActualizacion;
+    let valB = sortBy === 'proximo' ? b.proximoContacto : b.fechaActualizacion;
+
+    if (!valA && !valB) return 0;
+    if (!valA) return 1;
+    if (!valB) return -1;
+
+    const timeA = new Date(valA).getTime();
+    const timeB = new Date(valB).getTime();
+
+    if (isNaN(timeA)) return 1;
+    if (isNaN(timeB)) return -1;
+
+    return sortDir === 'asc' ? timeA - timeB : timeB - timeA;
+  });
 
   return (
-    <section className="list-container" aria-label="Listado de clientes">
+    <div className="list-container">
+      {/* ── Barra única: info izquierda + controles derecha ── */}
       <div className="table-info-bar">
         <div className="table-info-bar-left">
-          {cantidadSeleccionada === 0 ? (
+          {selectedCount === 0 ? (
             <>
               <IconUsers />
               <span>
-                {loadError || (cargando
-                  ? 'Cargando clientes…'
-                  : <>Total Clientes: <strong>{totalClientes} {totalClientes === 1 ? 'cliente' : 'clientes'}</strong></>)}
-                {(busqueda.trim() || estado || asesor) && <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}> (filtrado)</span>}
+                {loadError || (loading ? 'Cargando clientes…' : <>Total Clientes: <strong>{totalItems} {totalItems === 1 ? 'cliente' : 'clientes'}</strong></>)}
+                {(search || estado || asesor) && (
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>{' '}(filtrado)</span>
+                )}
               </span>
             </>
           ) : (
             <>
               <IconUsers />
-              <span><strong>{cantidadSeleccionada} {cantidadSeleccionada === 1 ? 'seleccionado' : 'seleccionados'}</strong></span>
-              <button className="selection-clear-btn" type="button" onClick={() => setSeleccionados(new Set())}>Limpiar</button>
-              {clienteSeleccionado && (
-                <button className="selection-clear-btn" type="button" onClick={() => setClienteAEditar(clienteSeleccionado)}>Editar</button>
+              <span>
+                <strong>{selectedCount} {selectedCount === 1 ? 'seleccionado' : 'seleccionados'}</strong>
+              </span>
+              <button type="button" className="selection-clear-btn" onClick={clearSelection}>
+                Limpiar
+              </button>
+              {selectedCount === 1 && (
+                <button type="button" className="selection-clear-btn" onClick={() => setShowEdit(true)}>
+                  Editar
+                </button>
               )}
-              <button className="selection-delete-btn" type="button" onClick={() => setMostrarConfirmacion(true)}>
-                Eliminar ({cantidadSeleccionada})
+              <button type="button" className="selection-delete-btn" onClick={() => setShowConfirm(true)}>
+                Eliminar ({selectedCount})
               </button>
             </>
           )}
         </div>
 
         <div className="table-info-bar-right">
-          <label className="search-input-wrap">
+          <div className="search-input-wrap">
             <IconSearch />
             <input
               className="search-input"
-              type="search"
+              type="text"
               placeholder="Buscar…"
-              aria-label="Buscar clientes por nombre, CUIT o teléfono"
-              value={busqueda}
-              onChange={event => onBusquedaChange(event.target.value)}
+              value={search}
+              onChange={e => onSearchChange && onSearchChange(e.target.value)}
             />
-          </label>
-          <select className="filter-select" value={estado} onChange={event => onEstadoChange(event.target.value)} aria-label="Filtrar por estado">
+          </div>
+          <select
+            className="filter-select"
+            value={estado}
+            onChange={e => onEstadoChange && onEstadoChange(e.target.value)}
+          >
             <option value="">Todos los estados</option>
-            <option>Prospecto</option>
-            <option>Contactado</option>
-            <option>Interesado</option>
-            <option>No interesado</option>
-            <option>Cliente</option>
+            {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
           </select>
-          <select className="filter-select" value={asesor} onChange={event => onAsesorChange(event.target.value)} aria-label="Filtrar por asesor">
+          <select
+            className="filter-select"
+            value={asesor}
+            onChange={e => onAsesorChange && onAsesorChange(e.target.value)}
+          >
             <option value="">Todos los asesores</option>
-            {asesores.map(nombreAsesor => <option key={nombreAsesor}>{nombreAsesor}</option>)}
+            {asesoresDropdown.map(a => (
+              <option key={a} value={a}>{a}</option>
+            ))}
           </select>
-          <button className="btn btn-primary btn-sm" type="button" onClick={() => setMostrarModal(true)}>Nuevo cliente</button>
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => onNuevoCliente && onNuevoCliente()}>
+            Nuevo cliente
+          </button>
         </div>
       </div>
 
+      {/* ── Tabla ── */}
       <div className="table-wrap">
         <table className="crm-table">
           <thead>
             <tr>
-              <th className="td-check"><input className="crm-checkbox" type="checkbox" aria-label="Seleccionar todos" checked={todosSeleccionados} onChange={alternarSeleccionTodos} /></th>
+              <th className="td-check">
+                <input type="checkbox" className="crm-checkbox" checked={allSelected} onChange={toggleAll} />
+              </th>
               <th>Nombre / Razón Social</th>
               <th>CUIT</th>
               <th>Teléfono</th>
               <th>Email</th>
               <th>Estado</th>
               <th>Asesor</th>
-              <th
-                className="sortable"
-                scope="col"
-                tabIndex={0}
-                aria-sort={sortBy === 'proximo' ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
-                onClick={() => onOrdenar('proximo')}
-                onKeyDown={event => activarOrdenConTeclado(event, 'proximo')}
-              >
-                <span className="th-content">
+              <th className="sortable" onClick={() => sortByColumn('proximo')}>
+                <div className="th-content">
                   Próximo Contacto
                   {sortBy === 'proximo' ? (
-                    <span className="th-sort-indicator">
+                    <span style={{ display: 'inline-flex', width: 12, height: 12, marginLeft: 4, color: 'var(--accent)' }}>
                       {sortDir === 'desc' ? <IconChevronDown /> : <IconChevronUp />}
                     </span>
                   ) : (
                     <span className="th-sort-hint"><IconChevronUp /></span>
                   )}
-                </span>
+                </div>
               </th>
-              <th
-                className="sortable"
-                scope="col"
-                tabIndex={0}
-                aria-sort={sortBy === 'actualizacion' ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
-                onClick={() => onOrdenar('actualizacion')}
-                onKeyDown={event => activarOrdenConTeclado(event, 'actualizacion')}
-              >
-                <span className="th-content">
+              <th className="sortable" onClick={() => sortByColumn('actualizacion')}>
+                <div className="th-content">
                   Última actualización
                   {sortBy === 'actualizacion' ? (
-                    <span className="th-sort-indicator">
+                    <span style={{ display: 'inline-flex', width: 12, height: 12, marginLeft: 4, color: 'var(--accent)' }}>
                       {sortDir === 'desc' ? <IconChevronDown /> : <IconChevronUp />}
                     </span>
                   ) : (
                     <span className="th-sort-hint"><IconChevronUp /></span>
                   )}
-                </span>
+                </div>
               </th>
             </tr>
           </thead>
           <tbody>
-            {loadError || cargando || clientes.length === 0 ? (
+            {loadError || loading || sortedClientes.length === 0 ? (
               <tr>
                 <td colSpan={9}>
                   <EmptyState
-                    icon={!cargando ? IconUsers : null}
-                    message={loadError || (cargando ? 'Cargando clientes…' : 'No se encontraron clientes.')}
+                    icon={!loading ? IconUsers : null}
+                    message={loadError || (loading ? 'Cargando clientes…' : 'No se encontraron clientes.')}
                     isError={Boolean(loadError)}
                   />
                 </td>
               </tr>
-            ) : clientes.map(cliente => (
-              <tr
-                key={cliente.id}
-                className={seleccionados.has(cliente.id) ? 'selected' : ''}
-                tabIndex={0}
-                aria-label={`Abrir ficha de ${cliente.nombre}`}
-                onClick={event => {
-                  if (event.target.closest('input[type="checkbox"]')) return;
-                  navigate(`/clientes/${cliente.id}`);
-                }}
-                onKeyDown={event => {
-                  if (event.target === event.currentTarget && event.key === 'Enter') {
-                    navigate(`/clientes/${cliente.id}`);
-                  }
-                }}
-              >
-                <td className="td-check"><input className="crm-checkbox" type="checkbox" aria-label={`Seleccionar ${cliente.nombre}`} checked={seleccionados.has(cliente.id)} onChange={() => alternarSeleccion(cliente.id)} /></td>
-                <td><div className="td-name"><span className="td-avatar">{getInitials(cliente.nombre)}</span>{cliente.nombre}</div></td>
-                <td className="td-mono">{cliente.cuit}</td>
-                <td className="cell-secondary cell-nowrap">{cliente.telefono}</td>
-                <td className="cell-secondary cell-nowrap">{cliente.email || '—'}</td>
-                <td><span className={`badge ${badgeClass(cliente.estado)}`}>{cliente.estado}</span></td>
-                <td className="cell-secondary">{cliente.asesor}</td>
-                <td>
-                  <div className={`date-cell${cliente.vencido ? ' overdue' : ''}`}>
-                    {cliente.vencido ? <IconAlertTriangle /> : <IconCalendar />}
-                    {formatDate(cliente.proximoContacto)}
-                  </div>
-                </td>
-                <td className="cell-muted">{formatDate(cliente.fechaActualizacion)}</td>
-              </tr>
-            ))}
+            ) : (
+              sortedClientes.map(cliente => {
+                const overdue = isOverdue(cliente.proximoContacto);
+                const isSelected = selected.has(cliente.id);
+                return (
+                  <tr
+                    key={cliente.id}
+                    className={`clickable-row ${isSelected ? 'selected' : ''}`}
+                    onClick={() => navigate(`/clientes/${cliente.id}`)}
+                  >
+                    <td className="td-check" onClick={e => e.stopPropagation()}>
+                      <input type="checkbox" className="crm-checkbox" checked={isSelected} onChange={() => toggleOne(cliente.id)} />
+                    </td>
+                    <td>
+                      <div className="td-name">
+                        <div className="td-avatar">{getInitials(cliente.nombre)}</div>
+                        {cliente.nombre}
+                      </div>
+                    </td>
+                    <td className="td-mono">{cliente.cuit}</td>
+                    <td style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{cliente.telefono}</td>
+                    <td style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{cliente.email || '—'}</td>
+                    <td>
+                      <span className={`badge ${badgeClass(cliente.estado)}`}>{cliente.estado}</span>
+                    </td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{cliente.asesor}</td>
+                    <td>
+                      <div className={`date-cell${overdue ? ' overdue' : ''}`}>
+                        {overdue ? <IconAlertTriangle /> : <IconCalendar />}
+                        {formatDate(cliente.proximoContacto)}
+                      </div>
+                    </td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{formatDate(cliente.fechaActualizacion)}</td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
 
-      {!loadError && !cargando && (
-        <Pagination
-          page={pagina}
-          totalPages={totalPaginas}
-          totalItems={totalClientes}
-          pageSize={5}
-          onPageChange={onPaginaChange}
-        />
-      )}
-      {mostrarModal && <ClienteFormModal clientes={todosLosClientes} onGuardar={datos => onGuardarCliente(datos)} onClose={() => setMostrarModal(false)} />}
-      {clienteAEditar && <ClienteFormModal clientes={todosLosClientes} initial={clienteAEditar} onGuardar={datos => onGuardarCliente(datos, clienteAEditar.id)} onClose={() => setClienteAEditar(null)} />}
-      {mostrarConfirmacion && (
-        <Modal title={`Eliminar ${cantidadSeleccionada} cliente(s)`} onClose={() => setMostrarConfirmacion(false)}>
-          <div className="modal-body modal-form">
-            <p className="delete-confirmation-message">
-              Se archivarán {cantidadSeleccionada} cliente(s) junto con su historial de gestiones. Esta acción no se puede deshacer.
-            </p>
-            <ApiErrorList errors={errorEliminacion ? [errorEliminacion] : []} />
-            <div className="modal-form-actions">
-              <button className="btn btn-outline" type="button" onClick={() => setMostrarConfirmacion(false)}>Cancelar</button>
-              <button className="btn btn-danger" type="button" disabled={eliminando} onClick={async () => {
-                setEliminando(true);
-                setErrorEliminacion('');
-                try {
-                  await onEliminarClientes([...seleccionados]);
-                  setSeleccionados(new Set());
-                  setMostrarConfirmacion(false);
-                } catch (error) {
-                  setErrorEliminacion(error.message);
-                } finally {
-                  setEliminando(false);
-                }
-              }}>{eliminando ? 'Eliminando…' : 'Eliminar'}</button>
+      {/* ── Paginación ── */}
+      <Pagination
+        page={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        onPageChange={onPageChange || (() => {})}
+      />
+
+      {/* ── Modal confirmación borrado masivo ── */}
+      {showConfirm && selectedCount > 0 && (
+        <div className="modal-backdrop" onClick={() => setShowConfirm(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-header-left">
+                <div>
+                  <h3 className="modal-title">Eliminar {selectedCount} cliente(s)</h3>
+                </div>
+              </div>
+              <button className="panel-close-btn" onClick={() => setShowConfirm(false)} title="Cerrar ventana">
+                <IconX />
+              </button>
+            </div>
+
+            <div className="modal-body modal-form">
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+                Se archivarán {selectedCount} cliente(s) junto con su historial de gestiones.
+                Esta acción no se puede deshacer.
+              </p>
+
+              <div className="modal-form-actions">
+                <button type="button" className="btn btn-outline" onClick={() => setShowConfirm(false)}>
+                  Cancelar
+                </button>
+                <button type="button" className="btn btn-danger" onClick={handleConfirmDelete}>
+                  Eliminar
+                </button>
+              </div>
             </div>
           </div>
-        </Modal>
+        </div>
       )}
-    </section>
+
+      {/* ── Modal edición del único seleccionado ── */}
+      {showEdit && selectedClient && (
+        <ClienteFormModal
+          initial={selectedClient}
+          clientes={clientes}
+          listaAsesores={listaAsesores}
+          onClose={() => setShowEdit(false)}
+          onSubmit={(patch) => {
+            if (onUpdateCliente) onUpdateCliente(selectedClient.id, patch);
+            setShowEdit(false);
+          }}
+        />
+      )}
+    </div>
   );
 }

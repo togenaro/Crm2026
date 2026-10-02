@@ -1,19 +1,19 @@
 import KpiCard from '../../../components/ui/KpiCard';
-import {
-  IconAlertTriangle,
-  IconBarChart,
-  IconTrendingUp,
-  IconUsers,
-} from '../../../components/ui/Icons';
+import { IconUsers, IconTrendingUp, IconAlertTriangle, IconBarChart } from '../../../components/ui/Icons';
 
-export default function KpiGrid({ resumen }) {
+export default function KpiGrid({ resumen = null }) {
   const total = resumen?.totalClientes ?? '—';
   const prospectos = resumen?.cantidadProspectos ?? '—';
   const interesados = resumen?.cantidadInteresados ?? '—';
   const vencidos = resumen?.seguimientosVencidos ?? '—';
 
   const cards = [
-    { label: 'Total Clientes', icon: <IconUsers />, value: total, sub: 'en el sistema' },
+    {
+      label: 'Total Clientes',
+      icon: <IconUsers />,
+      value: total,
+      sub: 'en el sistema',
+    },
     {
       label: 'Prospectos',
       icon: <IconBarChart />,
@@ -36,8 +36,10 @@ export default function KpiGrid({ resumen }) {
   ];
 
   return (
-    <section className="kpi-grid" aria-label="Resumen de clientes">
-      {cards.map(card => <KpiCard key={card.label} {...card} />)}
-    </section>
+    <div className="kpi-grid">
+      {cards.map((card) => (
+        <KpiCard key={card.label} {...card} />
+      ))}
+    </div>
   );
 }

@@ -4,16 +4,19 @@ const ToastContext = createContext(null);
 
 export function ToastProvider({ children }) {
   const [toast, setToast] = useState(null);
-
   useEffect(() => {
     if (!toast) return undefined;
-    const timeoutId = setTimeout(() => setToast(null), 3000);
-    return () => clearTimeout(timeoutId);
-  }, [toast]);
 
-  function showSuccess(message) {
+    const timeoutId = setTimeout(() => setToast(null), 3000);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [toast?.id]);
+
+  const showSuccess = (message) => {
     setToast({ id: Date.now(), message });
-  }
+  };
 
   return (
     <ToastContext.Provider value={{ showSuccess }}>
@@ -22,8 +25,17 @@ export function ToastProvider({ children }) {
         <div className="success-toast" role="status" aria-live="polite">
           <span className="success-toast-icon" aria-hidden="true">✓</span>
           <span className="success-toast-message">{toast.message}</span>
-          <button className="success-toast-close" type="button" aria-label="Cerrar notificación" onClick={() => setToast(null)}>×</button>
-          <div className="success-toast-progress" aria-hidden="true"><div /></div>
+          <button
+            type="button"
+            className="success-toast-close"
+            aria-label="Cerrar notificación"
+            onClick={() => setToast(null)}
+          >
+            ×
+          </button>
+          <div className="success-toast-progress" aria-hidden="true">
+            <div />
+          </div>
         </div>
       )}
     </ToastContext.Provider>
@@ -32,6 +44,6 @@ export function ToastProvider({ children }) {
 
 export function useToast() {
   const context = useContext(ToastContext);
-  if (!context) throw new Error('useToast debe usarse dentro de un ToastProvider');
+  if (!context) throw new Error('useToast debe usarse dentro de ToastProvider');
   return context;
 }

@@ -7,20 +7,20 @@ export const TIPOS_CONTACTO = [
 ];
 
 export function sortGestionesByDate(gestiones, recentFirst = true) {
-  return [...gestiones].sort((first, second) => {
-    const dateFirst = `${first.fechaGestion || first.fecha || ''} ${first.horaGestion || ''}`;
-    const dateSecond = `${second.fechaGestion || second.fecha || ''} ${second.horaGestion || ''}`;
-    return recentFirst ? dateSecond.localeCompare(dateFirst) : dateFirst.localeCompare(dateSecond);
+  return [...gestiones].sort((a, b) => {
+    const dateA = `${a.fechaGestion || a.fecha || ''} ${a.horaGestion || ''}`;
+    const dateB = `${b.fechaGestion || b.fecha || ''} ${b.horaGestion || ''}`;
+    return recentFirst ? dateB.localeCompare(dateA) : dateA.localeCompare(dateB);
   });
 }
 
 export function tipoIcon(tipo) {
-  const icons = {
+  const map = {
     Llamada: '📞',
     WhatsApp: '💬',
     Correo: '✉️',
     Reunión: '🤝',
     Otro: '📌',
   };
-  return icons[tipo] || '📌';
+  return map[tipo] || '📌';
 }

@@ -1,3 +1,4 @@
+/** Devuelve las iniciales de un nombre (máx 2 caracteres) */
 export function getInitials(name = '') {
   const parts = name.trim().split(/\s+/);
   if (!parts[0]) return '';
@@ -5,55 +6,93 @@ export function getInitials(name = '') {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-function asUtc(value) {
-  if (typeof value === 'string' && value.includes('T') && !/[Zz]$|[+-]\d{2}:?\d{2}$/.test(value)) {
-    return `${value}Z`;
+/** Si es ISO datetime con 'T' sin 'Z' ni offset ±hh:mm/±hhmm, lo trata como UTC */
+function asUtc(iso) {
+  if (typeof iso === 'string' && iso.includes('T') && !/[Zz]$|[+-]\d{2}:?\d{2}$/.test(iso)) {
+    return iso + 'Z';
   }
-  return value;
+  return iso;
 }
 
-export function formatDate(value) {
-  if (!value) return '—';
-  if (typeof value === 'string' && value.includes('T')) {
-    const date = new Date(asUtc(value));
-    if (!Number.isNaN(date.getTime())) {
+/** Formatea una fecha ISO yyyy-mm-dd (o con hora T) a dd/mm/yyyy */
+export function formatDate(iso) {
+  if (!iso) return '—';
+  if (typeof iso === 'string' && iso.includes('T')) {
+    const d = new Date(asUtc(iso));
+    if (!Number.isNaN(d.getTime())) {
       return new Intl.DateTimeFormat('es-AR', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
         timeZone: 'America/Argentina/Buenos_Aires',
-      }).format(date);
+      }).format(d);
     }
   }
-  const [year, month, day] = value.split('T')[0].split('-');
-  return year && month && day ? `${day}/${month}/${year}` : value;
+  const cleanIso = iso.includes('T') ? iso.split('T')[0] : iso;
+  const parts = cleanIso.split('-');
+  if (parts.length < 3) return cleanIso;
+  const [y, m, d] = parts;
+  return `${d}/${m}/${y}`;
 }
 
-export function formatDateTime(value, time) {
-  if (!value) return '—';
-  if (time) return `${formatDate(value)} · ${time}`;
-  if (value.includes('T')) {
-    const date = new Date(asUtc(value));
-    if (!Number.isNaN(date.getTime())) {
-      const dateText = formatDate(value);
-      const timeText = new Intl.DateTimeFormat('es-AR', {
-        hour: '2-digit', minute: '2-digit', hour12: false,
+/** Formatea fecha y hora (dd/mm/yyyy · hh:mm) */
+export function formatDateTime(fecha, hora) {
+  if (!fecha) return '—';
+  if (hora) {
+    const dateStr = formatDate(fecha);
+    return `${dateStr} · ${hora}`;
+  }
+  if (typeof fecha === 'string' && fecha.includes('T')) {
+    const d = new Date(asUtc(fecha));
+    if (!Number.isNaN(d.getTime())) {
+      const dateStr = new Intl.DateTimeFormat('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
         timeZone: 'America/Argentina/Buenos_Aires',
-      }).format(date);
-      return `${dateText} · ${timeText}`;
+      }).format(d);
+      const time = new Intl.DateTimeFormat('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'America/Argentina/Buenos_Aires',
+      }).format(d);
+      return `${dateStr} · ${time}`;
     }
   }
-  return formatDate(value);
+  const dateStr = formatDate(fecha);
+  let time = '';
+  if (typeof fecha === 'string' && fecha.includes('T')) {
+    const t = fecha.split('T')[1];
+    if (t && t.length >= 5) {
+      time = t.slice(0, 5);
+    }
+  }
+  return time ? `${dateStr} · ${time}` : dateStr;
 }
 
+/** Genera un id único simple */
 export function genId() {
   return Math.random().toString(36).slice(2, 9);
 }
 
-export function extractErrorMessages(error) {
-  if (!error) return ['Ocurrió un error inesperado.'];
-  const data = error.response?.data;
-  if (Array.isArray(data?.errores) && data.errores.length) return data.errores;
-  if (Array.isArray(data?.errors) && data.errors.length) return data.errors;
-  if (data?.error) return [data.error];
-  if (data?.message) return [data.message];
-  return [error.message || 'Ocurrió un error al procesar la solicitud.'];
+/** Extrae la lista de mensajes de error de la respuesta Axios del backend */
+export function extractErrorMessages(err) {
+  if (!err) return ['Ocurrió un error inesperado.'];
+  const resData = err.response?.data;
+  if (resData) {
+    if (Array.isArray(resData.errores) && resData.errores.length > 0) {
+      return resData.errores;
+    }
+    if (Array.isArray(resData.errors) && resData.errors.length > 0) {
+      return resData.errors;
+    }
+    if (resData.error) {
+      return [resData.error];
+    }
+    if (resData.message) {
+      return [resData.message];
+    }
+  }
+  return [err.message || 'Ocurrió un error al procesar la solicitud.'];
 }

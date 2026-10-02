@@ -5,7 +5,7 @@ export default function useApiFormSubmission() {
   const [errors, setErrors] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  async function submit(action) {
+  const submit = async (action) => {
     setErrors([]);
     setLoading(true);
     try {
@@ -17,7 +17,7 @@ export default function useApiFormSubmission() {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return { errors, loading, submit, clearErrors: () => setErrors([]) };
 }

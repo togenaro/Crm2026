@@ -1,116 +1,129 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useToast } from '../../../context/ToastContext';
-import { crearCliente, actualizarCliente, eliminarCliente, listarClientes } from '../services/clienteService';
-import { obtenerResumen } from '../services/dashboardService';
+import { useState, useEffect } from 'react';
 import KpiGrid from '../components/KpiGrid';
 import ClientesTable from '../components/ClientesTable';
-
-const TAMANO_PAGINA = 5;
+import ClienteFormModal from '../components/ClienteFormModal';
+import { clienteService } from '../services/clienteService';
+import { asesorService } from '../services/asesorService';
+import { dashboardService } from '../services/dashboardService';
+import { useToast } from '../../../context/ToastContext';
 
 export default function ClientesPage() {
+  const { showSuccess } = useToast();
   const [clientes, setClientes] = useState([]);
-  const [resumen, setResumen] = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [loadError, setLoadError] = useState('');
-  const [busqueda, setBusqueda] = useState('');
+  const [resumenKpi, setResumenKpi] = useState(null);
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 5, totalPages: 1, totalItems: 0 });
+  const [showClienteModal, setShowClienteModal] = useState(false);
+  const [search, setSearch] = useState('');
   const [estado, setEstado] = useState('');
   const [asesor, setAsesor] = useState('');
-  const [sortBy, setSortBy] = useState('proximo');
-  const [sortDir, setSortDir] = useState('asc');
-  const [pagina, setPagina] = useState(1);
-  const { showSuccess } = useToast();
+  const [listaAsesores, setListaAsesores] = useState([]);
+  const [clientesError, setClientesError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const loadData = useCallback(async () => {
-    setLoadError('');
-    setCargando(true);
-    const [clientesResult, resumenResult] = await Promise.allSettled([listarClientes(), obtenerResumen()]);
-    if (clientesResult.status === 'fulfilled') setClientes(clientesResult.value);
-    else {
-      setClientes([]);
-      setLoadError('No se pudieron cargar los clientes.');
+  const loadAsesores = async () => {
+    try {
+      const res = await asesorService.getAsesores();
+      setListaAsesores(res.map(item => item.nombre));
+    } catch (err) {
+      console.error('Error obteniendo asesores desde API:', err);
     }
-    setResumen(resumenResult.status === 'fulfilled' ? resumenResult.value : null);
-    setCargando(false);
+  };
+
+  const loadData = async (page = 1) => {
+    setIsLoading(true);
+    setClientesError('');
+    try {
+      const res = await clienteService.getClientes({ page, pageSize: 5, search, estado, asesor });
+      setClientes(res.items || []);
+      setPagination({
+        page: res.page || page,
+        pageSize: res.pageSize || 5,
+        totalPages: res.totalPages || 1,
+        totalItems: res.totalItems || (res.items ? res.items.length : 0),
+      });
+    } catch (err) {
+      console.error('Error cargando clientes desde API:', err);
+      setClientes([]);
+      setPagination({ page: 1, pageSize: 5, totalPages: 1, totalItems: 0 });
+      setClientesError('No se pudieron cargar los clientes.');
+    } finally {
+      setIsLoading(false);
+    }
+
+    try {
+      const kpiRes = await dashboardService.getResumen();
+      setResumenKpi(kpiRes);
+    } catch (err) {
+      console.error('Error cargando resumen del dashboard:', err);
+      setResumenKpi(null);
+    }
+  };
+
+  useEffect(() => {
+    loadAsesores();
   }, []);
 
-  useEffect(() => { void loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData(1);
+  }, [search, estado, asesor]);
 
-  async function guardarCliente(datos, clienteId) {
-    if (clienteId) {
-      await actualizarCliente(clienteId, datos);
-      showSuccess('Cliente actualizado.');
-    } else {
-      await crearCliente(datos);
-      showSuccess('Cliente creado.');
-      setPagina(1);
-    }
-    await loadData();
-  }
+  const handlePageChange = (newPage) => {
+    loadData(newPage);
+  };
 
-  async function borrarClientes(ids) {
-    await Promise.all(ids.map(eliminarCliente));
+  const handleEliminarClientes = async (ids) => {
+    await clienteService.deleteClientes(ids);
     showSuccess(ids.length === 1 ? 'Cliente eliminado.' : 'Clientes eliminados.');
-    await loadData();
-  }
+    await loadData(pagination.page);
+  };
 
-  function ordenarPor(columna) {
-    if (columna === sortBy) setSortDir(actual => actual === 'asc' ? 'desc' : 'asc');
-    else {
-      setSortBy(columna);
-      setSortDir(columna === 'actualizacion' ? 'desc' : 'asc');
-    }
-    setPagina(1);
-  }
+  const handleAddCliente = async (nuevoCliente) => {
+    await clienteService.createCliente(nuevoCliente);
+    showSuccess('Cliente creado.');
+    setShowClienteModal(false);
+    await loadData(1);
+  };
 
-  const terminoBusqueda = busqueda.trim().toLocaleLowerCase('es');
-  const asesores = [...new Set(clientes.map(cliente => cliente.asesor).filter(Boolean))]
-    .sort((first, second) => first.localeCompare(second, 'es'));
-  const clientesFiltrados = clientes.filter(cliente => {
-    const coincideBusqueda = !terminoBusqueda || [cliente.nombre, cliente.cuit, cliente.telefono]
-      .some(valor => valor?.toLocaleLowerCase('es').includes(terminoBusqueda));
-    return coincideBusqueda && (!estado || cliente.estado === estado)
-      && (!asesor || cliente.asesor?.toLocaleLowerCase('es').includes(asesor.toLocaleLowerCase('es')));
-  });
-  const clientesOrdenados = [...clientesFiltrados].sort((first, second) => {
-    const valorFirst = sortBy === 'proximo' ? first.proximoContacto : first.fechaActualizacion;
-    const valorSecond = sortBy === 'proximo' ? second.proximoContacto : second.fechaActualizacion;
-    const dateFirst = valorFirst ? new Date(valorFirst).getTime() : Number.NaN;
-    const dateSecond = valorSecond ? new Date(valorSecond).getTime() : Number.NaN;
-    if (Number.isNaN(dateFirst) && Number.isNaN(dateSecond)) return 0;
-    if (Number.isNaN(dateFirst)) return 1;
-    if (Number.isNaN(dateSecond)) return -1;
-    return sortDir === 'asc' ? dateFirst - dateSecond : dateSecond - dateFirst;
-  });
-  const totalPaginas = Math.max(1, Math.ceil(clientesOrdenados.length / TAMANO_PAGINA));
-  const inicio = (pagina - 1) * TAMANO_PAGINA;
-  const clientesVisibles = clientesOrdenados.slice(inicio, inicio + TAMANO_PAGINA);
+  const handleUpdateCliente = async (id, patch) => {
+    await clienteService.updateCliente(id, patch);
+    showSuccess('Cliente actualizado.');
+    await loadData(pagination.page);
+  };
 
   return (
     <>
-      <header className="page-header"><h1 className="page-title">Clientes</h1></header>
-      <KpiGrid resumen={resumen} />
+      <div className="page-header">
+        <h1 className="page-title">Clientes</h1>
+      </div>
+
+      <KpiGrid clientes={clientes} resumen={resumenKpi} />
+
       <ClientesTable
-        clientes={clientesVisibles}
-        todosLosClientes={clientes}
-        totalClientes={clientesFiltrados.length}
-        busqueda={busqueda}
-        onBusquedaChange={valor => { setBusqueda(valor); setPagina(1); }}
+        clientes={clientes}
+        pagination={pagination}
+        onPageChange={handlePageChange}
+        search={search}
+        onSearchChange={setSearch}
         estado={estado}
-        onEstadoChange={valor => { setEstado(valor); setPagina(1); }}
+        onEstadoChange={setEstado}
         asesor={asesor}
-        onAsesorChange={valor => { setAsesor(valor); setPagina(1); }}
-        asesores={asesores}
-        pagina={pagina}
-        totalPaginas={totalPaginas}
-        onPaginaChange={setPagina}
-        sortBy={sortBy}
-        sortDir={sortDir}
-        onOrdenar={ordenarPor}
-        onGuardarCliente={guardarCliente}
-        onEliminarClientes={borrarClientes}
-        cargando={cargando}
-        loadError={loadError}
+        onAsesorChange={setAsesor}
+        listaAsesores={listaAsesores}
+        loadError={clientesError}
+        loading={isLoading}
+        onEliminar={handleEliminarClientes}
+        onUpdateCliente={handleUpdateCliente}
+        onNuevoCliente={() => setShowClienteModal(true)}
       />
+
+      {showClienteModal && (
+        <ClienteFormModal
+          clientes={clientes}
+          listaAsesores={listaAsesores}
+          onClose={() => setShowClienteModal(false)}
+          onSubmit={handleAddCliente}
+        />
+      )}
     </>
   );
 }

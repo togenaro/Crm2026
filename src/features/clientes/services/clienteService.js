@@ -1,62 +1,88 @@
 import axiosClient from '../../../api/axiosClient';
 
-function formatoEstado(estado) {
-  return estado === 'NoInteresado' ? 'No interesado' : estado;
-}
+const API_TO_FRONT_ESTADO = {
+  0: 'Prospecto',
+  1: 'Contactado',
+  2: 'Interesado',
+  3: 'No interesado',
+  4: 'Cliente',
+  'NoInteresado': 'No interesado',
+};
 
-function fechaCorta(fecha) {
-  return fecha ? fecha.slice(0, 10) : '';
-}
+const FRONT_TO_API_ESTADO = {
+  'No interesado': 'NoInteresado',
+};
 
-function clienteDesdeApi(cliente) {
-  const proximoContacto = fechaCorta(cliente.proximoContacto);
+function normalizeCliente(c) {
+  if (!c) return c;
+  const estadoStr = typeof c.estado === 'number'
+    ? (API_TO_FRONT_ESTADO[c.estado] || 'Prospecto')
+    : (API_TO_FRONT_ESTADO[c.estado] || c.estado);
+
   return {
-    ...cliente,
-    estado: formatoEstado(cliente.estado),
-    proximoContacto,
-    fechaCreacion: fechaCorta(cliente.fechaCreacion),
-    fechaActualizacion: fechaCorta(cliente.fechaActualizacion),
-    vencido: Boolean(proximoContacto && proximoContacto < new Date().toISOString().slice(0, 10)),
+    ...c,
+    id: String(c.id),
+    estado: estadoStr,
   };
 }
 
-function estadoParaApi(estado) {
-  return estado === 'No interesado' ? 'NoInteresado' : estado;
-}
+export const clienteService = {
+  async getClientes({ page = 1, pageSize = 5, search = '', estado = '', asesor = '' } = {}) {
+    const params = { page, pageSize };
+    if (search && search.trim()) params.search = search.trim();
+    if (estado && estado.trim()) {
+      const eTrim = estado.trim();
+      params.estado = FRONT_TO_API_ESTADO[eTrim] || eTrim;
+    }
+    if (asesor && asesor.trim()) params.asesor = asesor.trim();
 
-function clienteParaApi(datos) {
-  return {
-    nombre: datos.nombre,
-    cuit: datos.cuit,
-    telefono: datos.telefono || null,
-    email: datos.email || null,
-    estado: estadoParaApi(datos.estado),
-    asesor: datos.asesor || null,
-  };
-}
+    const response = await axiosClient.get('/clientes', { params });
+    const resData = response.data;
+    if (Array.isArray(resData)) {
+      const normalized = resData.map(normalizeCliente);
+      return {
+        items: normalized,
+        totalItems: normalized.length,
+        page,
+        pageSize,
+        totalPages: Math.ceil(normalized.length / pageSize),
+      };
+    }
+    if (resData && resData.items) {
+      return {
+        ...resData,
+        items: resData.items.map(normalizeCliente),
+      };
+    }
+    return resData;
+  },
 
-export async function listarClientes() {
-  const { data: resultado } = await axiosClient.get('/clientes', {
-    params: { page: 1, pageSize: 1000 },
-  });
-  return resultado.items.map(clienteDesdeApi);
-}
+  async getClienteById(id) {
+    const response = await axiosClient.get(`/clientes/${id}`);
+    return normalizeCliente(response.data);
+  },
 
-export async function obtenerCliente(id) {
-  const { data: cliente } = await axiosClient.get(`/clientes/${id}`);
-  return clienteDesdeApi(cliente);
-}
+  async createCliente(clienteData) {
+    const payload = {
+      ...clienteData,
+      estado: FRONT_TO_API_ESTADO[clienteData.estado] || clienteData.estado,
+    };
+    const response = await axiosClient.post('/clientes', payload);
+    return normalizeCliente(response.data);
+  },
 
-export async function crearCliente(datos) {
-  const { data: cliente } = await axiosClient.post('/clientes', clienteParaApi(datos));
-  return clienteDesdeApi(cliente);
-}
+  async updateCliente(id, patchData) {
+    const payload = {
+      ...patchData,
+      estado: FRONT_TO_API_ESTADO[patchData.estado] || patchData.estado,
+    };
+    const response = await axiosClient.put(`/clientes/${id}`, payload);
+    return normalizeCliente(response.data);
+  },
 
-export async function actualizarCliente(id, datos) {
-  const { data: cliente } = await axiosClient.put(`/clientes/${id}`, clienteParaApi(datos));
-  return clienteDesdeApi(cliente);
-}
-
-export function eliminarCliente(id) {
-  return axiosClient.delete(`/clientes/${id}`);
-}
+  async deleteClientes(ids) {
+    const list = Array.isArray(ids) ? ids : [ids];
+    await Promise.all(list.map((id) => axiosClient.delete(`/clientes/${id}`)));
+    return true;
+  }
+};

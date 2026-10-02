@@ -1,149 +1,187 @@
-import { useState } from 'react';
-import Modal from '../../../components/ui/Modal';
-import ApiErrorList from '../../../components/ui/ApiErrorList';
-import useApiFormSubmission from '../../../hooks/useApiFormSubmission';
+import { useForm } from 'react-hook-form';
 import { ESTADOS } from '../../clientes/clienteHelpers';
+import ApiErrorList from '../../../components/ui/ApiErrorList';
+import Modal from '../../../components/ui/Modal';
+import useApiFormSubmission from '../../../hooks/useApiFormSubmission';
 
-export default function GestionesFormModal({ cliente = null, clientes = [], editingGestion = null, onClose, onGuardar }) {
-  const [clienteId, setClienteId] = useState(editingGestion?.clienteId ?? cliente?.id ?? '');
-  const [estado, setEstado] = useState(editingGestion?.estadoResultante ?? cliente?.estado ?? ESTADOS[0]);
-  const [proximoContacto, setProximoContacto] = useState(editingGestion?.proximoContacto ?? cliente?.proximoContacto ?? '');
-  const [erroresCampo, setErroresCampo] = useState({});
-  const [intentoEnvio, setIntentoEnvio] = useState(false);
-  const { errors: apiErrors, submit, clearErrors } = useApiFormSubmission();
+export default function GestionesFormModal({
+  clientes = [],
+  initialClienteId = '',
+  onClose,
+  onSubmit,
+  usuario,
+  lockCliente = false,
+  editingGestion = null,
+}) {
+  const initialClient = clientes.find(c => String(c.id) === String(initialClienteId)) || null;
+  const { errors: apiErrors, loading, submit, clearErrors } = useApiFormSubmission();
+
   const now = new Date();
-  const fechaActual = now.toISOString().split('T')[0];
-  const horaActual = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  const clienteSeleccionado = cliente || clientes.find(item => String(item.id) === String(clienteId));
+  const defaultFecha = now.toISOString().split('T')[0];
+  const defaultHora = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-  function obtenerErrorCampo(nombre, valor) {
-    if (nombre === 'clienteId' && !valor) return 'Seleccioná un cliente.';
-    if (nombre === 'fechaGestion' && !valor) return 'La fecha de la gestión es obligatoria.';
-    if (nombre === 'horaGestion' && !valor) return 'La hora de la gestión es obligatoria.';
-    if (nombre === 'comentario' && !valor.trim()) return 'El comentario es obligatorio.';
-    if (nombre === 'estadoResultante' && !valor) return 'Seleccioná el nuevo estado del cliente.';
-    return '';
-  }
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      clienteId: editingGestion?.clienteId || initialClienteId,
+      tipoContacto: editingGestion?.tipoContacto || 'Llamada',
+      fechaGestion: editingGestion?.fechaGestion?.split('T')[0] || defaultFecha,
+      horaGestion: editingGestion?.fechaGestion?.split('T')[1]?.slice(0, 5) || defaultHora,
+      comentario: editingGestion?.comentario || '',
+      estadoResultante: editingGestion?.estadoResultante ?? initialClient?.estado ?? ESTADOS[0],
+      proximoContacto: editingGestion?.proximoContacto?.split('T')[0] || initialClient?.proximoContacto?.split('T')[0] || '',
+    },
+  });
 
-  function validarCambio(nombre, valor) {
-    setErroresCampo(actuales => {
-      if (!intentoEnvio && !Object.hasOwn(actuales, nombre)) return actuales;
-      const siguientes = { ...actuales };
-      const errorCampo = obtenerErrorCampo(nombre, valor);
-      if (errorCampo) siguientes[nombre] = errorCampo;
-      else delete siguientes[nombre];
-      return siguientes;
-    });
-  }
+  const selectedClienteId = watch('clienteId');
+  const selectedCliente = clientes.find(c => String(c.id) === String(selectedClienteId));
 
-  function seleccionarCliente(event) {
-    const id = event.target.value;
-    const seleccionado = clientes.find(item => String(item.id) === String(id));
-    setClienteId(id);
-    setEstado(seleccionado?.estado ?? ESTADOS[0]);
-    setProximoContacto(seleccionado?.proximoContacto ?? '');
-    validarCambio('clienteId', id);
-  }
+  const handlePickClient = (e) => {
+    const id = e.target.value;
+    setValue('clienteId', id);
+    const picked = clientes.find(c => String(c.id) === String(id));
+    if (picked) {
+      setValue('estadoResultante', picked.estado);
+      setValue('proximoContacto', picked.proximoContacto || '');
+    }
+  };
 
-  async function guardarGestion(event) {
-    event.preventDefault();
-    setIntentoEnvio(true);
-    const campos = new FormData(event.currentTarget);
-    const datos = {
-      clienteId: cliente?.id ?? clienteId,
-      tipoContacto: campos.get('tipoContacto'),
-      fechaGestion: campos.get('fechaGestion'),
-      horaGestion: campos.get('horaGestion'),
-      comentario: campos.get('comentario').trim(),
-      estadoResultante: campos.get('estadoResultante'),
-      proximoContacto: campos.get('proximoContacto') || '',
-    };
-    const errores = Object.fromEntries(
-      ['clienteId', 'fechaGestion', 'horaGestion', 'comentario', 'estadoResultante']
-        .map(nombre => [nombre, obtenerErrorCampo(nombre, datos[nombre])])
-        .filter(([, mensaje]) => mensaje),
-    );
-    setErroresCampo(errores);
-    if (Object.keys(errores).length > 0) return;
-
+  const onFormSubmit = async (data) => {
     clearErrors();
-    await submit(() => onGuardar(datos));
-  }
+    const cliente = clientes.find(c => String(c.id) === String(data.clienteId));
+    const asesorSesion = (typeof usuario === 'string' ? usuario : usuario?.nombre || '').trim();
+    const fecha = data.fechaGestion || defaultFecha;
+    const hora = data.horaGestion || defaultHora;
+    const fechaGestionIso = `${fecha}T${hora}:00`;
+
+    const nuevaGestion = {
+      id: editingGestion?.id || `g-${Date.now()}`,
+      clienteId: data.clienteId,
+      fechaGestion: fecha,
+      horaGestion: hora,
+      fechaGestionIso: fechaGestionIso,
+      tipoContacto: data.tipoContacto,
+      comentario: data.comentario.trim(),
+      estadoResultante: data.estadoResultante,
+      asesor: asesorSesion || cliente?.asesor || 'Asesor Asignado',
+    };
+
+    await submit(async () => {
+      await onSubmit(nuevaGestion, data.estadoResultante, data.proximoContacto);
+    });
+  };
 
   return (
     <Modal
       title={editingGestion ? 'Editar gestión' : 'Nueva gestión'}
-      subtitle={clienteSeleccionado && <>Cliente: <strong>{clienteSeleccionado.nombre}</strong></>}
+      subtitle={selectedCliente?.nombre && <>Cliente: <strong>{selectedCliente.nombre}</strong></>}
       onClose={onClose}
     >
-        <form className="modal-body modal-form" onSubmit={guardarGestion}>
+        <form onSubmit={handleSubmit(onFormSubmit)} className="modal-body modal-form">
           <ApiErrorList errors={apiErrors} />
-          {!cliente && !editingGestion && (
+          {lockCliente ? (
+            <input type="hidden" {...register('clienteId')} />
+          ) : (
             <div className="form-group">
-              <label className="form-label" htmlFor="gestion-cliente">Cliente *</label>
-              <select className="filter-select" id="gestion-cliente" value={clienteId} onChange={seleccionarCliente}>
+              <label className="form-label">Cliente *</label>
+              <select
+                className="filter-select"
+                {...register('clienteId', { required: 'Seleccioná un cliente.' })}
+                onChange={handlePickClient}
+              >
                 <option value="">Seleccionar cliente…</option>
-                {clientes.map(item => (
-                  <option key={item.id} value={item.id}>{item.nombre} · CUIT {item.cuit}</option>
+                {clientes.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre} · CUIT {c.cuit}
+                  </option>
                 ))}
               </select>
-              {erroresCampo.clienteId && <span className="form-error">{erroresCampo.clienteId}</span>}
+              {errors.clienteId && <span className="form-error">{errors.clienteId.message}</span>}
             </div>
           )}
 
           <div className="form-group">
-            <label className="form-label" htmlFor="gestion-tipo">Tipo de gestión</label>
-              <select className="filter-select" id="gestion-tipo" name="tipoContacto" defaultValue={editingGestion?.tipoContacto ?? 'Llamada'}>
-              <option>Llamada</option>
+            <label className="form-label">Tipo de gestión</label>
+            <select className="filter-select" {...register('tipoContacto')}>
+              <option value="Llamada">Llamada</option>
               <option value="Correo">Correo / Email</option>
-              <option>Reunión</option>
-              <option>WhatsApp</option>
-              <option>Otro</option>
+              <option value="Reunión">Reunión</option>
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Otro">Otro</option>
             </select>
           </div>
 
           <div className="form-row-2">
             <div className="form-group">
-              <label className="form-label" htmlFor="gestion-fecha">Fecha de la gestión *</label>
-              <input className="search-input" id="gestion-fecha" name="fechaGestion" type="date" defaultValue={editingGestion?.fechaGestion?.slice(0, 10) ?? fechaActual} onChange={event => validarCambio('fechaGestion', event.target.value)} />
-              {erroresCampo.fechaGestion && <span className="form-error">{erroresCampo.fechaGestion}</span>}
+              <label className="form-label">Fecha de la gestión *</label>
+              <input
+                type="date"
+                className="search-input"
+                {...register('fechaGestion', { required: 'La fecha de la gestión es obligatoria.' })}
+              />
+              {errors.fechaGestion && <span className="form-error">{errors.fechaGestion.message}</span>}
             </div>
+
             <div className="form-group">
-              <label className="form-label" htmlFor="gestion-hora">Hora de la gestión *</label>
-              <input className="search-input" id="gestion-hora" name="horaGestion" type="time" defaultValue={editingGestion?.fechaGestion?.slice(11, 16) ?? horaActual} onChange={event => validarCambio('horaGestion', event.target.value)} />
-              {erroresCampo.horaGestion && <span className="form-error">{erroresCampo.horaGestion}</span>}
+              <label className="form-label">Hora de la gestión *</label>
+              <input
+                type="time"
+                className="search-input"
+                {...register('horaGestion', { required: 'La hora de la gestión es obligatoria.' })}
+              />
+              {errors.horaGestion && <span className="form-error">{errors.horaGestion.message}</span>}
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="gestion-comentario">Observaciones / Detalles *</label>
-            <textarea className="search-input" id="gestion-comentario" name="comentario" placeholder="Detalles de la interacción realizada…" defaultValue={editingGestion?.comentario ?? ''} onChange={event => validarCambio('comentario', event.target.value)} />
-            {erroresCampo.comentario && <span className="form-error">{erroresCampo.comentario}</span>}
+            <label className="form-label">Observaciones / Detalles *</label>
+            <textarea
+              className="search-input"
+              placeholder="Detalles de la interacción realizada…"
+              {...register('comentario', { required: 'El comentario es obligatorio.' })}
+            />
+            {errors.comentario && <span className="form-error">{errors.comentario.message}</span>}
           </div>
 
           <div className="form-row-2">
             <div className="form-group">
-              <label className="form-label" htmlFor="gestion-estado">Nuevo Estado del Cliente *</label>
-              <select className="filter-select" id="gestion-estado" name="estadoResultante" value={estado} onChange={event => {
-                setEstado(event.target.value);
-                validarCambio('estadoResultante', event.target.value);
-              }}>
+              <label className="form-label">Nuevo Estado del Cliente *</label>
+              <select
+                className="filter-select"
+                {...register('estadoResultante', { required: 'Seleccioná el nuevo estado del cliente.' })}
+              >
                 <option value="">Seleccionar estado…</option>
-                {ESTADOS.map(item => <option key={item}>{item}</option>)}
+                {ESTADOS.map(e => (
+                  <option key={e} value={e}>{e}</option>
+                ))}
               </select>
-              {erroresCampo.estadoResultante && <span className="form-error">{erroresCampo.estadoResultante}</span>}
+              {errors.estadoResultante && <span className="form-error">{errors.estadoResultante.message}</span>}
             </div>
+
             <div className="form-group">
-              <label className="form-label" htmlFor="gestion-proximo-contacto">Próxima fecha de contacto</label>
-              <input className="search-input" id="gestion-proximo-contacto" name="proximoContacto" type="date" value={proximoContacto} onChange={event => setProximoContacto(event.target.value)} />
+              <label className="form-label">Próxima fecha de contacto</label>
+              <input
+                type="date"
+                className="search-input"
+                {...register('proximoContacto')}
+              />
             </div>
           </div>
 
-          <footer className="modal-form-actions">
+          <div className="modal-form-actions">
             <span className="form-required-legend">* Campos obligatorios</span>
-            <button className="btn btn-outline" type="button" onClick={onClose}>Cancelar</button>
-          <button className="btn btn-primary" type="submit">{editingGestion ? 'Guardar cambios' : 'Guardar gestión'}</button>
-          </footer>
+            <button type="button" className="btn btn-outline" onClick={onClose}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn btn-primary">
+              {editingGestion ? 'Guardar cambios' : 'Guardar gestión'}
+            </button>
+          </div>
         </form>
     </Modal>
   );

@@ -1,123 +1,153 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
-import {
-  IconAlertTriangle,
-  IconArrowUpDown,
-  IconCalendar,
-  IconEdit,
-  IconMail,
-  IconPhone,
-  IconPlus,
-  IconStatus,
-  IconTrendingUp,
-  IconUser,
-} from '../../../components/ui/Icons';
-import GestionCard from '../../gestiones/components/GestionCard';
-import GestionesFormModal from '../../gestiones/components/GestionesFormModal';
-import ClienteFormModal from '../components/ClienteFormModal';
-import Pagination from '../../../components/ui/Pagination';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { useToast } from '../../../context/ToastContext';
-import { badgeClass, isOverdue } from '../clienteHelpers';
-import { obtenerCliente, actualizarCliente } from '../services/clienteService';
-import { crearGestion, actualizarGestion, listarGestionesPorCliente } from '../../gestiones/services/gestionService';
+import { clienteService } from '../services/clienteService';
+import { gestionService } from '../../gestiones/services/gestionService';
+import {
+  IconCalendar, IconPlus, IconUser, IconTrendingUp, IconStatus,
+  IconAlertTriangle, IconEdit, IconMail, IconPhone, IconArrowUpDown,
+} from '../../../components/ui/Icons';
 import { formatDate } from '../../../utils/helpers';
+import { badgeClass, isOverdue } from '../clienteHelpers';
 import { sortGestionesByDate } from '../../gestiones/gestionHelpers';
+import ClienteFormModal from '../components/ClienteFormModal';
+import GestionesFormModal from '../../gestiones/components/GestionesFormModal';
+import GestionCard from '../../gestiones/components/GestionCard';
+import { useToast } from '../../../context/ToastContext';
+import Pagination from '../../../components/ui/Pagination';
 
-const TAMANO_PAGINA_GESTIONES = 5;
+const GESTIONES_PAGE_SIZE = 5;
 
 export default function ClienteDetailPage() {
-  const { clienteId } = useParams();
+  const { id } = useParams();
+  const navigate = useNavigate();
   const location = useLocation();
-  const [cliente, setCliente] = useState(null);
-  const [gestiones, setGestiones] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [cargandoGestiones, setCargandoGestiones] = useState(true);
-  const [errorCliente, setErrorCliente] = useState('');
-  const [errorGestiones, setErrorGestiones] = useState('');
-  const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
-  const [mostrarModalCliente, setMostrarModalCliente] = useState(false);
-  const [gestionAEditar, setGestionAEditar] = useState(null);
-  const [sortDir, setSortDir] = useState('desc');
-  const [paginaGestiones, setPaginaGestiones] = useState(1);
-  const idCargado = useRef(null);
+  const returnPath = location.state?.from === '/gestiones' ? '/gestiones' : '/clientes';
   const { usuario } = useAuth();
   const { showSuccess } = useToast();
-  const volverAGestiones = location.state?.from === '/gestiones';
 
-  const loadData = useCallback(async () => {
-    const nuevoCliente = idCargado.current !== clienteId;
-    if (nuevoCliente) {
-      idCargado.current = clienteId;
-      setCliente(null);
-      setCargando(true);
-      setPaginaGestiones(1);
-    }
-    setErrorCliente('');
-    setErrorGestiones('');
-    setCargandoGestiones(true);
+  const [cliente, setCliente] = useState(null);
+  const [clientGestiones, setClientGestiones] = useState([]);
+  const [gestionPage, setGestionPage] = useState(1);
+  const [gestionPagination, setGestionPagination] = useState({ totalItems: 0, totalPages: 1 });
+  const [allClientes, setAllClientes] = useState([]);
+  const [clienteError, setClienteError] = useState('');
+  const [gestionesError, setGestionesError] = useState('');
+  const [isLoadingGestiones, setIsLoadingGestiones] = useState(true);
+  const [ordenRecientes, setOrdenRecientes] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showGestionModal, setShowGestionModal] = useState(false);
+  const [editingGestion, setEditingGestion] = useState(null);
 
-    let clienteActual;
+  const loadData = async (requestedPage = gestionPage, recentFirst = ordenRecientes) => {
+    setClienteError('');
+    setGestionesError('');
+    setIsLoadingGestiones(true);
+    let c;
     try {
-      clienteActual = await obtenerCliente(clienteId);
-      setCliente(clienteActual);
-      setCargando(false);
-    } catch {
+      c = await clienteService.getClienteById(id);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        navigate('/clientes');
+        return;
+      }
+      console.error(`Error cargando cliente ${id}:`, err);
       setCliente(null);
-      setErrorCliente('No se pudieron cargar los datos del cliente.');
-      setCargando(false);
-      setCargandoGestiones(false);
+      setClienteError('No se pudieron cargar los datos del cliente.');
+      setIsLoadingGestiones(false);
       return;
     }
+    if (!c) {
+      navigate('/clientes');
+      return;
+    }
+    setCliente(c);
+    setAllClientes([c]);
 
     try {
-      setGestiones(await listarGestionesPorCliente(clienteId, clienteActual));
-    } catch {
-      setGestiones([]);
-      setErrorGestiones('No se pudieron cargar las gestiones de este cliente.');
+      const firstPage = await gestionService.getGestionesByCliente(id, {
+        page: 1,
+        pageSize: GESTIONES_PAGE_SIZE,
+      });
+      const totalPages = Math.max(firstPage.totalPages || 1, 1);
+      const apiPage = recentFirst ? requestedPage : totalPages - requestedPage + 1;
+      const gRes = apiPage === 1
+        ? firstPage
+        : await gestionService.getGestionesByCliente(id, {
+        page: apiPage,
+        pageSize: GESTIONES_PAGE_SIZE,
+      });
+      setClientGestiones(gRes.items || []);
+      setGestionPagination({ totalItems: gRes.totalItems || 0, totalPages });
+    } catch (err) {
+      console.error(`Error cargando gestiones para cliente ${id}:`, err);
+      setClientGestiones([]);
+      setGestionPagination({ totalItems: 0, totalPages: 1 });
+      setGestionesError('No se pudieron cargar las gestiones de este cliente.');
     } finally {
-      setCargandoGestiones(false);
+      setIsLoadingGestiones(false);
     }
-  }, [clienteId]);
+  };
 
-  useEffect(() => { void loadData(); }, [loadData]);
+  useEffect(() => {
+    setGestionPage(1);
+  }, [id]);
 
-  async function guardarCliente(datos) {
-    await actualizarCliente(cliente.id, datos);
-    showSuccess('Cliente actualizado.');
-    void loadData();
+  useEffect(() => {
+    loadData(gestionPage, ordenRecientes);
+  }, [id, gestionPage, ordenRecientes]);
+
+  if (clienteError) {
+    return <div className="error-banner">{clienteError}</div>;
   }
+  if (!cliente) return <div className="empty-state">Cargando cliente…</div>;
 
-  async function guardarGestion(datos) {
-    if (gestionAEditar) {
-      await actualizarGestion(cliente.id, gestionAEditar.id, datos);
-      showSuccess('Gestión actualizada.');
-    } else {
-      await crearGestion(cliente.id, { ...datos, asesor: usuario?.nombre || cliente.asesor });
-      showSuccess('Gestión registrada.');
-    }
-    setGestionAEditar(null);
-    setMostrarModalGestion(false);
-    void loadData();
-  }
-
-  if (errorCliente) return <div className="error-banner">{errorCliente}</div>;
-  if (cargando) return <div className="empty-state">Cargando cliente…</div>;
-  if (!cliente) return <Navigate to="/clientes" replace />;
+  const gestionesOrdenadas = sortGestionesByDate(clientGestiones, ordenRecientes);
 
   const vencido = isOverdue(cliente.proximoContacto);
-  const gestionesOrdenadas = sortGestionesByDate(gestiones, sortDir === 'desc');
-  const totalPaginasGestiones = Math.max(1, Math.ceil(gestionesOrdenadas.length / TAMANO_PAGINA_GESTIONES));
-  const inicioGestiones = (paginaGestiones - 1) * TAMANO_PAGINA_GESTIONES;
-  const gestionesVisibles = gestionesOrdenadas.slice(inicioGestiones, inicioGestiones + TAMANO_PAGINA_GESTIONES);
+
+  const handleGestionSubmit = async (nuevaGestion, nuevoEstado, proximoContacto) => {
+    if (!nuevaGestion?.comentario?.trim()) return;
+
+    if (editingGestion) {
+      await gestionService.updateGestion(
+        cliente.id,
+        editingGestion.id,
+        nuevaGestion,
+        nuevoEstado,
+        proximoContacto,
+      );
+      showSuccess('Gestión actualizada.');
+    } else {
+      await gestionService.addGestion(
+        cliente.id,
+        nuevaGestion,
+        nuevoEstado,
+        proximoContacto,
+        usuario?.nombre,
+      );
+      showSuccess('Gestión registrada.');
+    }
+    setShowGestionModal(false);
+    setEditingGestion(null);
+    await loadData(gestionPage, ordenRecientes);
+  };
+
+  const handleUpdateCliente = async (patch) => {
+    await clienteService.updateCliente(cliente.id, patch);
+    showSuccess('Cliente actualizado.');
+    setShowEditModal(false);
+    await loadData(gestionPage, ordenRecientes);
+  };
 
   return (
     <div className="full-view-container">
-      <header className="page-header detail-page-header">
+      {/* Cabecera */}
+      <div className="page-header">
         <div>
           <div className="detail-title-row">
             <h1 className="page-title">{cliente.nombre}</h1>
-            <button className="action-btn" type="button" title="Editar cliente" aria-label="Editar cliente" onClick={() => setMostrarModalCliente(true)}>
+            <button type="button" className="action-btn" onClick={() => setShowEditModal(true)} title="Editar cliente">
               <IconEdit />
             </button>
           </div>
@@ -125,106 +155,109 @@ export default function ClienteDetailPage() {
           <div className="detail-subtitle detail-contact"><IconMail /> {cliente.email || '—'}</div>
           <div className="detail-subtitle detail-contact"><IconPhone /> {cliente.telefono}</div>
         </div>
-        <Link className="btn-back-discrete" to={volverAGestiones ? '/gestiones' : '/clientes'}>
-          ← Volver a {volverAGestiones ? 'Gestiones' : 'Clientes'}
-        </Link>
-      </header>
+        <div className="page-actions">
+          <button type="button" className="btn-back-discrete" onClick={() => navigate(returnPath)}>
+            ← Volver a {returnPath === '/gestiones' ? 'Gestiones' : 'Clientes'}
+          </button>
+        </div>
+      </div>
 
-      <section className="full-view-meta-card" aria-label="Datos actuales del cliente">
+      {/* Tarjeta de Datos Rápidos */}
+      <div className="full-view-meta-card">
         <div className="full-meta-item">
           <span className="full-meta-label"><IconStatus /> Estado actual</span>
-          <span className="full-meta-value">
-            <span className={`badge ${badgeClass(cliente.estado)}`}>{cliente.estado}</span>
-          </span>
+          <span className="full-meta-value"><span className={`badge ${badgeClass(cliente.estado)}`}>{cliente.estado}</span></span>
         </div>
         <div className="full-meta-item">
-          <span className="full-meta-label"><IconUser /> Asesor asignado</span>
+          <span className="full-meta-label"><IconUser /> Asesor Asignado</span>
           <span className="full-meta-value">{cliente.asesor}</span>
         </div>
         <div className="full-meta-item">
-          <span className="full-meta-label"><IconCalendar /> Próximo contacto</span>
+          <span className="full-meta-label"><IconCalendar /> Próximo Contacto</span>
           <span className={`full-meta-value${vencido ? ' overdue' : ''}`}>
             {vencido && <IconAlertTriangle />}{formatDate(cliente.proximoContacto)}
           </span>
         </div>
         <div className="full-meta-item">
-          <span className="full-meta-label"><IconTrendingUp /> Última actualización</span>
+          <span className="full-meta-label"><IconTrendingUp /> Última Actualización</span>
           <span className="full-meta-value">{formatDate(cliente.fechaActualizacion)}</span>
         </div>
-      </section>
+      </div>
 
-      <section className="list-container detail-history" aria-label="Historial de gestiones">
-        <div className="table-info-bar">
-          <div className="table-info-bar-left">
-            <strong>
-              Historial de Gestiones ({errorGestiones ? '—' : gestiones.length})
-            </strong>
-          </div>
-          <div className="table-info-bar-right">
-            <button
-              className="btn btn-outline btn-sm"
-              type="button"
-              title="Cambiar orden por fecha"
-              onClick={() => {
-                setSortDir(actual => actual === 'desc' ? 'asc' : 'desc');
-                setPaginaGestiones(1);
-              }}
-            >
-              <IconArrowUpDown /> {sortDir === 'desc' ? 'Recientes' : 'Antiguas'}
-            </button>
-            <button className="btn btn-primary btn-sm" type="button" onClick={() => {
-              setGestionAEditar(null);
-              setMostrarModalGestion(true);
-            }}>
-              <IconPlus /> Nueva gestión
-            </button>
-          </div>
-        </div>
-        <div className="full-history-list">
-          {errorGestiones || cargandoGestiones || gestionesVisibles.length === 0 ? (
-            <div className={errorGestiones ? 'error-banner' : 'empty-state'}>
-              <p>{errorGestiones ? 'No se pudieron cargar las gestiones de este cliente.' : cargandoGestiones ? 'Cargando gestiones…' : 'No hay gestiones registradas para este cliente.'}</p>
+      {/* Historial de Gestiones a Ancho Completo */}
+      <div className="full-view-history-col" style={{ width: '100%' }}>
+        <div className="list-container">
+          <div className="table-info-bar">
+            <div className="table-info-bar-left">
+              <strong>Historial de Gestiones ({gestionesError ? '—' : gestionPagination.totalItems})</strong>
             </div>
-          ) : gestionesVisibles.map(gestion => (
-            <GestionCard
-              key={gestion.id}
-              gestion={gestion}
-              showCliente={false}
-              onClickGestion={seleccionada => setGestionAEditar(seleccionada)}
+            <div className="table-info-bar-right">
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                title="Cambiar orden por fecha"
+                onClick={() => setOrdenRecientes(v => !v)}
+              >
+                <IconArrowUpDown /> {ordenRecientes ? 'Recientes' : 'Antiguas'}
+              </button>
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => { setEditingGestion(null); setShowGestionModal(true); }}>
+                <IconPlus /> Nueva gestión
+              </button>
+            </div>
+          </div>
+          <div className="full-history-list">
+            {gestionesError || isLoadingGestiones || clientGestiones.length === 0 ? (
+              <div className={gestionesError ? 'error-banner' : 'empty-state'}>
+                <p>{gestionesError || (isLoadingGestiones ? 'Cargando gestiones…' : 'No hay gestiones registradas para este cliente.')}</p>
+              </div>
+            ) : (
+              gestionesOrdenadas.map(g => (
+                <GestionCard
+                  key={g.id}
+                  gestion={g}
+                  cliente={cliente}
+                  showCliente={false}
+                  onClickGestion={gestion => {
+                    setEditingGestion(gestion);
+                    setShowGestionModal(true);
+                  }}
+                />
+              ))
+            )}
+          </div>
+          {!gestionesError && !isLoadingGestiones && (
+            <Pagination
+              page={gestionPage}
+              totalPages={gestionPagination.totalPages}
+              totalItems={gestionPagination.totalItems}
+              pageSize={GESTIONES_PAGE_SIZE}
+              onPageChange={setGestionPage}
             />
-          ))}
+          )}
         </div>
-        {!errorGestiones && !cargandoGestiones && (
-          <Pagination
-            page={paginaGestiones}
-            totalPages={totalPaginasGestiones}
-            totalItems={gestiones.length}
-            pageSize={TAMANO_PAGINA_GESTIONES}
-            onPageChange={setPaginaGestiones}
-          />
-        )}
-      </section>
-      {mostrarModalGestion && (
+      </div>
+
+      {/* Modal Registrar Nueva Gestión */}
+      {showGestionModal && (
         <GestionesFormModal
-          cliente={cliente}
-          editingGestion={gestionAEditar}
-          onClose={() => {
-            setGestionAEditar(null);
-            setMostrarModalGestion(false);
-          }}
-          onGuardar={guardarGestion}
+          clientes={allClientes}
+          initialClienteId={id}
+          lockCliente
+          editingGestion={editingGestion}
+          usuario={usuario}
+          onClose={() => { setShowGestionModal(false); setEditingGestion(null); }}
+          onSubmit={handleGestionSubmit}
         />
       )}
-      {gestionAEditar && !mostrarModalGestion && (
-        <GestionesFormModal
-          cliente={cliente}
-          editingGestion={gestionAEditar}
-          onClose={() => setGestionAEditar(null)}
-          onGuardar={guardarGestion}
+
+      {/* Modal Editar cliente */}
+      {showEditModal && (
+        <ClienteFormModal
+          initial={cliente}
+          clientes={allClientes}
+          onClose={() => setShowEditModal(false)}
+          onSubmit={handleUpdateCliente}
         />
-      )}
-      {mostrarModalCliente && (
-        <ClienteFormModal clientes={[cliente]} initial={cliente} onClose={() => setMostrarModalCliente(false)} onGuardar={guardarCliente} />
       )}
     </div>
   );

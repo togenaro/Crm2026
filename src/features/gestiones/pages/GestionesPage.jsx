@@ -1,198 +1,221 @@
-import { useCallback, useEffect, useState } from 'react';
-import {
-  IconArrowUpDown,
-  IconCalendar,
-  IconSearch,
-} from '../../../components/ui/Icons';
-import GestionCard from '../components/GestionCard';
-import GestionesFormModal from '../components/GestionesFormModal';
-import EmptyState from '../../../components/ui/EmptyState';
-import Pagination from '../../../components/ui/Pagination';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { useToast } from '../../../context/ToastContext';
-import { listarClientes } from '../../clientes/services/clienteService';
-import { crearGestion, actualizarGestion, listarGestiones } from '../services/gestionService';
+import { IconSearch, IconCalendar, IconArrowUpDown } from '../../../components/ui/Icons';
+import GestionesFormModal from '../components/GestionesFormModal';
+import GestionCard from '../components/GestionCard';
 import { sortGestionesByDate, TIPOS_CONTACTO } from '../gestionHelpers';
+import { gestionService } from '../services/gestionService';
+import { useToast } from '../../../context/ToastContext';
+import Pagination from '../../../components/ui/Pagination';
+import EmptyState from '../../../components/ui/EmptyState';
+import { clienteService } from '../../clientes/services/clienteService';
+import { asesorService } from '../../clientes/services/asesorService';
 
-const TAMANO_PAGINA = 5;
+const PAGE_SIZE = 5;
 
 export default function GestionesPage() {
+  const { showSuccess } = useToast();
+  const navigate = useNavigate();
+  const { usuario } = useAuth();
   const [clientes, setClientes] = useState([]);
   const [gestiones, setGestiones] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [loadError, setLoadError] = useState('');
-  const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
-  const [gestionAEditar, setGestionAEditar] = useState(null);
-  const [busqueda, setBusqueda] = useState('');
+  const [asesores, setAsesores] = useState([]);
+  const [pagination, setPagination] = useState({ totalItems: 0, totalPages: 0, page: 1 });
+  const [search, setSearch] = useState('');
   const [tipo, setTipo] = useState('');
   const [asesor, setAsesor] = useState('');
   const [sortDir, setSortDir] = useState('desc');
-  const [pagina, setPagina] = useState(1);
-  const { usuario } = useAuth();
-  const { showSuccess } = useToast();
+  const [showModal, setShowModal] = useState(false);
+  const [editingGestion, setEditingGestion] = useState(null);
+  const [page, setPage] = useState(1);
+  const [loadError, setLoadError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const loadData = useCallback(async () => {
-    setCargando(true);
-    setLoadError('');
-    const [clientesResult, gestionesResult] = await Promise.allSettled([listarClientes(), listarGestiones()]);
-    if (clientesResult.status === 'fulfilled') setClientes(clientesResult.value);
-    else setClientes([]);
-    if (gestionesResult.status === 'fulfilled') setGestiones(gestionesResult.value);
-    else {
-      setGestiones([]);
-      setLoadError('No se pudieron cargar las gestiones.');
-    }
-    if (clientesResult.status === 'rejected' && gestionesResult.status === 'fulfilled') {
-      setLoadError('No se pudieron cargar los clientes.');
-    }
-    setCargando(false);
+  useEffect(() => {
+    const loadAsesores = async () => {
+      try {
+        const result = await asesorService.getAsesores();
+        setAsesores(result.map(item => item.nombre));
+      } catch (err) {
+        console.error('Error cargando asesores desde API:', err);
+        setAsesores([]);
+      }
+    };
+
+    loadAsesores();
   }, []);
 
-  useEffect(() => { void loadData(); }, [loadData]);
+  const loadData = async (requestedPage = page) => {
+    setIsLoading(true);
+    setLoadError('');
+    try {
+      const [result, clientesResult] = await Promise.all([
+        gestionService.getGestiones({
+          page: requestedPage,
+          pageSize: PAGE_SIZE,
+          search,
+          tipo,
+          asesor,
+        }),
+        clienteService.getClientes({ page: 1, pageSize: 1000 }),
+      ]);
+      const items = result?.items || [];
+      setGestiones(items);
+      setPagination(result);
+      setClientes(clientesResult?.items || []);
+    } catch (err) {
+      console.error('Error cargando gestiones desde API:', err);
+      setGestiones([]);
+      setClientes([]);
+      setLoadError('No se pudieron cargar las gestiones.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  async function guardarGestion(datos) {
-    if (gestionAEditar) {
-      await actualizarGestion(datos.clienteId, gestionAEditar.id, datos);
+  useEffect(() => {
+    loadData();
+  }, [page, search, tipo, asesor]);
+
+  const byId = new Map(clientes.map(c => [String(c.id), c]));
+  const asesoresDisponibles = [...asesores].sort((a, b) => a.localeCompare(b, 'es'));
+
+  const filtered = sortGestionesByDate(gestiones, sortDir === 'desc');
+  const currentPage = pagination.page || page;
+  const pageItems = filtered;
+
+  const handleAddGestion = async (nuevaGestion, nuevoEstado, proximoContacto) => {
+    if (editingGestion) {
+      await gestionService.updateGestion(
+        nuevaGestion.clienteId,
+        editingGestion.id,
+        nuevaGestion,
+        nuevoEstado,
+        proximoContacto,
+      );
       showSuccess('Gestión actualizada.');
     } else {
-      const cliente = clientes.find(item => String(item.id) === String(datos.clienteId));
-      if (!cliente) throw new Error('Seleccioná un cliente válido para registrar la gestión.');
-      await crearGestion(cliente.id, { ...datos, asesor: usuario?.nombre || cliente.asesor });
+      await gestionService.addGestion(
+        nuevaGestion.clienteId,
+        nuevaGestion,
+        nuevoEstado,
+        proximoContacto,
+        usuario?.nombre,
+      );
       showSuccess('Gestión registrada.');
     }
-    setGestionAEditar(null);
-    setPagina(1);
-    setMostrarModalGestion(false);
-    void loadData();
-  }
-  const terminoBusqueda = busqueda.trim().toLocaleLowerCase('es');
-  const asesores = [...new Set(gestiones.map(gestion => gestion.asesor).filter(Boolean))]
-    .sort((primero, segundo) => primero.localeCompare(segundo, 'es'));
-  const gestionesFiltradas = sortGestionesByDate(gestiones, sortDir === 'desc')
-    .filter(gestion => {
-      const coincideBusqueda = !terminoBusqueda || [
-        gestion.clienteNombre,
-        gestion.comentario,
-        gestion.asesor,
-      ].some(valor => valor?.toLocaleLowerCase('es').includes(terminoBusqueda));
-      const coincideTipo = !tipo || gestion.tipoContacto === tipo;
-      const coincideAsesor = !asesor || gestion.asesor === asesor;
-
-      return coincideBusqueda && coincideTipo && coincideAsesor;
-    });
-  const totalPaginas = Math.max(1, Math.ceil(gestionesFiltradas.length / TAMANO_PAGINA));
-  const indiceInicial = (pagina - 1) * TAMANO_PAGINA;
-  const gestionesVisibles = gestionesFiltradas.slice(indiceInicial, indiceInicial + TAMANO_PAGINA);
+    setShowModal(false);
+    setEditingGestion(null);
+    setPage(1);
+    await loadData(1);
+  };
 
   return (
     <div className="gestiones-view">
-      <header className="page-header">
+      <div className="page-header">
         <h1 className="page-title">Gestiones</h1>
-      </header>
+      </div>
 
-      <section className="list-container" aria-label="Listado de gestiones">
+      <div className="list-container">
         <div className="table-info-bar">
           <div className="table-info-bar-left">
             <IconCalendar />
             <span>
-              {loadError || (cargando
-                ? 'Cargando gestiones…'
-                : <>Total Gestiones: <strong>{gestionesFiltradas.length} {gestionesFiltradas.length === 1 ? 'gestión' : 'gestiones'}</strong></>)}
+              {loadError || (isLoading ? 'Cargando gestiones…' : <>Total Gestiones: <strong>{pagination.totalItems || 0} {(pagination.totalItems || 0) === 1 ? 'gestión' : 'gestiones'}</strong></>)}
             </span>
           </div>
-
           <div className="table-info-bar-right">
-            <label className="search-input-wrap">
+            <div className="search-input-wrap">
               <IconSearch />
               <input
                 className="search-input"
-                type="search"
+                type="text"
                 placeholder="Buscar por cliente, comentario o asesor…"
-                aria-label="Buscar gestiones"
-                value={busqueda}
-                onChange={event => {
-                  setBusqueda(event.target.value);
-                  setPagina(1);
-                }}
+                value={search}
+                onChange={e => { setSearch(e.target.value); setPage(1); }}
               />
-            </label>
-            <select className="filter-select" value={tipo} onChange={event => {
-              setTipo(event.target.value);
-              setPagina(1);
-            }} aria-label="Filtrar por tipo">
+            </div>
+            <select
+              className="filter-select"
+              value={tipo}
+              onChange={e => { setTipo(e.target.value); setPage(1); }}
+            >
               <option value="">Todos los tipos</option>
-              {TIPOS_CONTACTO.map(tipo => <option key={tipo}>{tipo}</option>)}
+              {TIPOS_CONTACTO.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
-            <select className="filter-select" value={asesor} onChange={event => {
-              setAsesor(event.target.value);
-              setPagina(1);
-            }} aria-label="Filtrar por asesor">
+            <select
+              className="filter-select"
+              value={asesor}
+              onChange={e => { setAsesor(e.target.value); setPage(1); }}
+              aria-label="Filtrar gestiones por asesor"
+            >
               <option value="">Todos los asesores</option>
-              {asesores.map(nombre => <option key={nombre}>{nombre}</option>)}
+              {asesoresDisponibles.map(nombre => <option key={nombre} value={nombre}>{nombre}</option>)}
             </select>
             <button
-              className="btn btn-outline btn-sm"
               type="button"
+              className="btn btn-outline btn-sm"
               title="Cambiar orden por fecha"
-              onClick={() => {
-                setSortDir(actual => actual === 'desc' ? 'asc' : 'desc');
-                setPagina(1);
-              }}
+              onClick={() => { setSortDir(d => d === 'desc' ? 'asc' : 'desc'); setPage(1); }}
             >
               <IconArrowUpDown /> {sortDir === 'desc' ? 'Recientes' : 'Antiguas'}
             </button>
-            <button className="btn btn-primary btn-sm" type="button" onClick={() => {
-              setGestionAEditar(null);
-              setMostrarModalGestion(true);
-            }}>
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>
               Nueva gestión
             </button>
           </div>
         </div>
 
         <div className="full-history-list">
-          {loadError || cargando || gestionesFiltradas.length === 0 ? (
+          {loadError || isLoading || filtered.length === 0 ? (
             <EmptyState
-              icon={!cargando ? IconCalendar : null}
-              message={loadError || (cargando ? 'Cargando gestiones…' : 'No se encontraron gestiones.')}
+              icon={!isLoading ? IconCalendar : null}
+              message={loadError || (isLoading ? 'Cargando gestiones…' : 'No se encontraron gestiones.')}
               isError={Boolean(loadError)}
             />
-          ) : gestionesVisibles.map(gestion => {
-            const cliente = clientes.find(item => item.cuit === gestion.clienteCuit);
-
-            return (
-              <GestionCard
-                key={gestion.id}
-                gestion={gestion}
-                clienteId={cliente?.id}
-                onClickGestion={seleccionada => {
-                  setGestionAEditar(seleccionada);
-                  setMostrarModalGestion(true);
-                }}
-              />
-            );
-          })}
+          ) : (
+            pageItems.map(g => {
+              const cliente = byId.get(String(g.clienteId));
+              return (
+                <GestionCard
+                  key={g.id}
+                  gestion={g}
+                  cliente={cliente}
+                  onClickGestion={gestion => {
+                    setEditingGestion(gestion);
+                    setShowModal(true);
+                  }}
+                  onClickCliente={(c, fallbackId) => {
+                    const id = c?.id || fallbackId || g.clienteId;
+                    if (id) navigate(`/clientes/${id}`, { state: { from: '/gestiones' } });
+                  }}
+                />
+              );
+            })
+          )}
         </div>
 
-        {!loadError && !cargando && (
+        {!loadError && !isLoading && (
           <Pagination
-            page={pagina}
-            totalPages={totalPaginas}
-            totalItems={gestionesFiltradas.length}
-            pageSize={TAMANO_PAGINA}
-            onPageChange={setPagina}
+            page={currentPage}
+            totalPages={pagination.totalPages || 0}
+            totalItems={pagination.totalItems || 0}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
           />
         )}
-      </section>
-      {mostrarModalGestion && (
+      </div>
+
+      {showModal && (
         <GestionesFormModal
           clientes={clientes}
-          editingGestion={gestionAEditar}
-          onClose={() => {
-            setGestionAEditar(null);
-            setMostrarModalGestion(false);
-          }}
-          onGuardar={guardarGestion}
+          usuario={usuario}
+            initialClienteId={editingGestion?.clienteId || ''}
+            lockCliente={Boolean(editingGestion)}
+            editingGestion={editingGestion}
+            onClose={() => { setShowModal(false); setEditingGestion(null); }}
+          onSubmit={handleAddGestion}
         />
       )}
     </div>

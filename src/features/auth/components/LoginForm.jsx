@@ -1,21 +1,31 @@
-import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { IconBolt } from '../../../components/ui/Icons';
-import { USUARIOS, resolveAsesor } from '../services/authService';
+import { USUARIOS, loginAsesor } from '../services/authService';
 
 export default function LoginForm({ onLoginSuccess }) {
-  const [usuario, setUsuario] = useState('');
-  const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState({});
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    defaultValues: {
+      usuario: '',
+      password: '',
+    },
+  });
 
-  function submit(event) {
-    event.preventDefault();
-    const asesor = resolveAsesor(usuario);
-    if (!usuario.trim()) return setErrors({ usuario: 'Ingresá tu usuario.' });
-    if (!asesor) return setErrors({ usuario: 'Usuario no reconocido para esta demo.' });
-    if (!password) return setErrors({ password: 'Ingresá tu contraseña.' });
-    setErrors({});
-    onLoginSuccess(asesor);
-  }
+  const onSubmit = async (data) => {
+    try {
+      const asesor = await loginAsesor(data);
+      onLoginSuccess(asesor.nombre);
+    } catch (error) {
+      const message = error.response?.status === 401
+        ? 'Usuario o contraseña incorrectos.'
+        : 'No se pudo conectar con el servidor. Intentá nuevamente.';
+      setError('root', { type: 'server', message });
+    }
+  };
 
   return (
     <div className="login-card">
@@ -23,19 +33,39 @@ export default function LoginForm({ onLoginSuccess }) {
         <IconBolt />
         <span>ZOCO CRM</span>
       </div>
-      <form className="modal-form" onSubmit={submit}>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="modal-form">
         <div className="form-group">
-          <label className="form-label" htmlFor="usuario">Usuario *</label>
-          <input className="search-input" id="usuario" name="usuario" placeholder="Tu nombre de usuario" autoComplete="username" value={usuario} onChange={event => setUsuario(event.target.value)} />
-          {errors.usuario && <span className="form-error">{errors.usuario}</span>}
+          <label className="form-label">Usuario *</label>
+          <input
+            className="search-input"
+            placeholder="Tu nombre de usuario"
+            autoComplete="username"
+            {...register('usuario', { required: 'Ingresá tu usuario.' })}
+          />
+          {errors.usuario && <span className="form-error">{errors.usuario.message}</span>}
         </div>
+
         <div className="form-group">
-          <label className="form-label" htmlFor="password">Contraseña *</label>
-          <input className="search-input" id="password" name="password" type="password" placeholder="Tu contraseña" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} />
-          {errors.password && <span className="form-error">{errors.password}</span>}
+          <label className="form-label">Contraseña *</label>
+          <input
+            type="password"
+            className="search-input"
+            placeholder="Tu contraseña"
+            autoComplete="current-password"
+            {...register('password', { required: 'Ingresá tu contraseña.' })}
+          />
+          {errors.password && <span className="form-error">{errors.password.message}</span>}
         </div>
-        <button className="btn btn-primary login-submit" type="submit">Ingresar</button>
-        <p className="login-hint">Demo: {USUARIOS.map(item => item.usuario).join(' · ')} (cualquier contraseña)</p>
+
+        <button type="submit" className="btn btn-primary login-submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Ingresando…' : 'Ingresar'}
+        </button>
+
+        <p className="login-hint">
+          Demo: {USUARIOS.map(u => u.usuario).join(' · ')} · Contraseña: 1234
+        </p>
+        {errors.root && <span className="form-error">{errors.root.message}</span>}
       </form>
     </div>
   );

@@ -9,19 +9,13 @@ export const axiosClient = axios.create({
   },
 });
 
+// Interceptor para manejo global de errores si es necesario
 axiosClient.interceptors.response.use(
-  response => response,
-  error => {
-    const body = error.response?.data;
-    const message = body?.error
-      || body?.errores?.join(' ')
-      || Object.values(body?.errors ?? {}).flat().join(' ')
-      || (error.response
-        ? `La solicitud falló (${error.response.status}).`
-        : 'No se pudo conectar con el servidor. Verificá que el backend esté iniciado.');
-
-    return Promise.reject(new Error(message));
-  },
+  (response) => response,
+  (error) => {
+    // Tratamiento de errores de red o backend
+    return Promise.reject(error);
+  }
 );
 
 export default axiosClient;
