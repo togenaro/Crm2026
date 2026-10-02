@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   IconAlertTriangle,
   IconCalendar,
+  IconChevronDown,
   IconChevronUp,
   IconSearch,
   IconUsers,
@@ -43,6 +44,8 @@ export default function ClientesTable({
   asesores,
 }) {
   const navigate = useNavigate();
+  const [sortBy, setSortBy] = useState('proximo');
+  const [sortDir, setSortDir] = useState('asc');
   const [mostrarModal, setMostrarModal] = useState(false);
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
   const [clienteAEditar, setClienteAEditar] = useState(null);
@@ -52,6 +55,37 @@ export default function ClientesTable({
   const clienteSeleccionado = cantidadSeleccionada === 1
     ? clientes.find(cliente => seleccionados.has(cliente.id))
     : null;
+
+  function ordenarPor(columna) {
+    if (columna === sortBy) {
+      setSortDir(actual => actual === 'asc' ? 'desc' : 'asc');
+      return;
+    }
+
+    setSortBy(columna);
+    setSortDir(columna === 'actualizacion' ? 'desc' : 'asc');
+  }
+
+  function activarOrdenConTeclado(event, columna) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    ordenarPor(columna);
+  }
+
+  const clientesOrdenados = [...clientes].sort((primero, segundo) => {
+    const valorPrimero = sortBy === 'proximo' ? primero.proximoContacto : primero.fechaActualizacion;
+    const valorSegundo = sortBy === 'proximo' ? segundo.proximoContacto : segundo.fechaActualizacion;
+    const fechaPrimero = valorPrimero ? new Date(valorPrimero).getTime() : Number.NaN;
+    const fechaSegundo = valorSegundo ? new Date(valorSegundo).getTime() : Number.NaN;
+    const primeroSinFecha = Number.isNaN(fechaPrimero);
+    const segundoSinFecha = Number.isNaN(fechaSegundo);
+
+    if (primeroSinFecha && segundoSinFecha) return 0;
+    if (primeroSinFecha) return 1;
+    if (segundoSinFecha) return -1;
+
+    return sortDir === 'asc' ? fechaPrimero - fechaSegundo : fechaSegundo - fechaPrimero;
+  });
 
   function alternarSeleccionTodos() {
     setSeleccionados(actuales => {
@@ -137,11 +171,43 @@ export default function ClientesTable({
               <th>Email</th>
               <th>Estado</th>
               <th>Asesor</th>
-              <th className="sortable">
-                <span className="th-content">Próximo Contacto <span className="th-sort-indicator"><IconChevronUp /></span></span>
+              <th
+                className="sortable"
+                scope="col"
+                tabIndex={0}
+                aria-sort={sortBy === 'proximo' ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
+                onClick={() => ordenarPor('proximo')}
+                onKeyDown={event => activarOrdenConTeclado(event, 'proximo')}
+              >
+                <span className="th-content">
+                  Próximo Contacto
+                  {sortBy === 'proximo' ? (
+                    <span className="th-sort-indicator">
+                      {sortDir === 'desc' ? <IconChevronDown /> : <IconChevronUp />}
+                    </span>
+                  ) : (
+                    <span className="th-sort-hint"><IconChevronUp /></span>
+                  )}
+                </span>
               </th>
-              <th className="sortable">
-                <span className="th-content">Última actualización <span className="th-sort-hint"><IconChevronUp /></span></span>
+              <th
+                className="sortable"
+                scope="col"
+                tabIndex={0}
+                aria-sort={sortBy === 'actualizacion' ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
+                onClick={() => ordenarPor('actualizacion')}
+                onKeyDown={event => activarOrdenConTeclado(event, 'actualizacion')}
+              >
+                <span className="th-content">
+                  Última actualización
+                  {sortBy === 'actualizacion' ? (
+                    <span className="th-sort-indicator">
+                      {sortDir === 'desc' ? <IconChevronDown /> : <IconChevronUp />}
+                    </span>
+                  ) : (
+                    <span className="th-sort-hint"><IconChevronUp /></span>
+                  )}
+                </span>
               </th>
             </tr>
           </thead>
@@ -150,7 +216,7 @@ export default function ClientesTable({
               <tr>
                 <td className="crm-empty-row" colSpan="9">No se encontraron clientes con esos criterios.</td>
               </tr>
-            ) : clientes.map(cliente => (
+            ) : clientesOrdenados.map(cliente => (
               <tr
                 key={cliente.id}
                 className={seleccionados.has(cliente.id) ? 'selected' : ''}
