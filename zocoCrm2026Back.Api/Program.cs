@@ -15,7 +15,7 @@ builder.Services.AddControllers()
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddPersistence();
+builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddScoped<ClienteManagementService>();
 builder.Services.AddScoped<GestionManagementService>();
 builder.Services.AddScoped<DashboardService>();
