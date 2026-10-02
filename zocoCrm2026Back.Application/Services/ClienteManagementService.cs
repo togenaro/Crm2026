@@ -72,4 +72,24 @@ public class ClienteManagementService
             pageSize,
             totalPages));
     }
+    
+    public async Task<ClienteModel.ClienteResponse> GetClienteById(Guid id)
+    {
+        var cliente = await _repository.GetById<Cliente>(id);
+
+        if (cliente == null || !cliente.IsActive)
+            throw new KeyNotFoundException("Cliente no encontrado.");
+
+        return new ClienteModel.ClienteResponse(
+            cliente.Id,
+            cliente.Nombre!,
+            cliente.Cuit!,
+            cliente.Telefono,
+            cliente.Email,
+            cliente.Estado,
+            cliente.Asesor,
+            cliente.ProximoContacto,
+            cliente.FechaCreacion,
+            cliente.FechaActualizacion);
+    }
 }

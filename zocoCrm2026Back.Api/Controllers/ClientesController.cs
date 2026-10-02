@@ -28,4 +28,11 @@ public class ClientesController : ControllerBase
 
         return Ok(result);
     }
+    
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetClienteById(Guid id)
+    {
+        var cliente = await _clienteService.GetClienteById(id);
+        return Ok(cliente);
+    }
 }
