@@ -1,6 +1,7 @@
 using zocoCrm2026Back.Application.Services;
 using zocoCrm2026Back.Data.Repositories;
 using zocoCrm2026Back.Domain.Interfaces;
+using zocoCrm2026Back.Api.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();

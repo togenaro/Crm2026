@@ -1,6 +1,8 @@
 using zocoCrm2026Back.Application.Dtos;
 using zocoCrm2026Back.Domain.Entities;
 using zocoCrm2026Back.Domain.Interfaces;
+using System.Text.RegularExpressions;
+using zocoCrm2026Back.Application.Exceptions;
 
 namespace zocoCrm2026Back.Application.Services;
 
@@ -96,11 +98,14 @@ public class ClienteManagementService
     public async Task<ClienteModel.ClienteResponse> AddCliente(
         ClienteModel.ClienteRequest request)
     {
+        ValidateRequest(request.Nombre, request.Cuit, request.Email,
+            request.Estado, request.Asesor);
+        
         var exist = await _repository.First<Cliente>(
             c => c.Cuit == request.Cuit);
 
         if (exist != null)
-            throw new InvalidOperationException(
+            throw new DuplicatedEntityException(
                 $"Ya existe un cliente con el CUIT {request.Cuit}");
 
         var cliente = new Cliente
@@ -127,5 +132,34 @@ public class ClienteManagementService
             cliente.ProximoContacto,
             cliente.FechaCreacion,
             cliente.FechaActualizacion);
+    }
+    
+    private void ValidateRequest(
+        string nombre, string cuit, string? email,
+        EstadoCliente estado, string? asesor)
+    {
+        var errores = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(nombre) || nombre.Length < 3 || nombre.Length > 100)
+            errores.Add("El nombre es obligatorio y debe tener entre 3 y 100 caracteres.");
+
+        if (string.IsNullOrWhiteSpace(cuit))
+            errores.Add("El CUIT es obligatorio.");
+
+        if (!Regex.IsMatch(cuit, @"^\d{2}-\d{8}-\d{1}$"))
+            errores.Add("El CUIT debe tener formato XX-XXXXXXXX-X.");
+
+        if (!Enum.IsDefined(typeof(EstadoCliente), estado))
+            errores.Add("Estado de cliente no válido.");
+
+        if (!string.IsNullOrWhiteSpace(email) &&
+            !Regex.IsMatch(email, @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"))
+            errores.Add("Formato de email no válido.");
+
+        if (string.IsNullOrWhiteSpace(asesor) || asesor.Length < 2 || asesor.Length > 100)
+            errores.Add("El asesor es obligatorio y debe tener entre 2 y 100 caracteres.");
+
+        if (errores.Any())
+            throw new ValidationException(errores);
     }
 }
