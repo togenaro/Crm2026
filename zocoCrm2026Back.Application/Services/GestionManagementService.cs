@@ -22,23 +22,12 @@ public class GestionManagementService
         if (cliente == null || !cliente.IsActive)
             throw new KeyNotFoundException("Cliente no encontrado.");
 
-        var errores = new List<string>();
-
-        var tipoClean = request.TipoContacto?.Replace("ó", "o");
-        if (!Enum.TryParse<TipoContacto>(tipoClean, out var tipoContacto))
-            errores.Add("Tipo de contacto no válido. Valores permitidos: Llamada, WhatsApp, Correo, Reunión, Otro.");
-
-        if (!Enum.TryParse<EstadoCliente>(request.EstadoResultante, out var estadoResultante))
-            errores.Add("Estado resultante no válido. Valores permitidos: Prospecto, Contactado, Interesado, NoInteresado, Cliente.");
-
-        if (string.IsNullOrWhiteSpace(request.Comentario) || request.Comentario.Length < 5)
-            errores.Add("El comentario es obligatorio y debe tener al menos 5 caracteres.");
-
-        if (request.ProximoContacto.HasValue && request.ProximoContacto.Value < DateTime.UtcNow.Date)
-            errores.Add("El próximo contacto no puede ser una fecha pasada.");
-
-        if (errores.Any())
-            throw new ValidationException(errores);
+        var (tipoContacto, estadoResultante) = ValidateRequest(
+            request.TipoContacto,
+            request.Comentario,
+            request.EstadoResultante,
+            request.ProximoContacto,
+            proximoContactoActual: null);
 
         var gestion = new Gestion
         {
@@ -84,25 +73,12 @@ public class GestionManagementService
         if (gestion == null)
             throw new KeyNotFoundException("Gestión no encontrada.");
 
-        var errores = new List<string>();
-
-        var tipoClean = request.TipoContacto?.Replace("ó", "o");
-        if (!Enum.TryParse<TipoContacto>(tipoClean, out var tipoContacto))
-            errores.Add("Tipo de contacto no válido. Valores permitidos: Llamada, WhatsApp, Correo, Reunión, Otro.");
-
-        if (!Enum.TryParse<EstadoCliente>(request.EstadoResultante, out var estadoResultante))
-            errores.Add("Estado resultante no válido. Valores permitidos: Prospecto, Contactado, Interesado, NoInteresado, Cliente.");
-
-        if (string.IsNullOrWhiteSpace(request.Comentario) || request.Comentario.Length < 5)
-            errores.Add("El comentario es obligatorio y debe tener al menos 5 caracteres.");
-
-        if (request.ProximoContacto.HasValue
-            && request.ProximoContacto.Value < DateTime.UtcNow.Date
-            && request.ProximoContacto.Value.Date != gestion.ProximoContacto?.Date)
-            errores.Add("El próximo contacto no puede ser una fecha pasada.");
-
-        if (errores.Any())
-            throw new ValidationException(errores);
+        var (tipoContacto, estadoResultante) = ValidateRequest(
+            request.TipoContacto,
+            request.Comentario,
+            request.EstadoResultante,
+            request.ProximoContacto,
+            proximoContactoActual: gestion.ProximoContacto);
 
         gestion.TipoContacto = tipoContacto;
         gestion.Comentario = request.Comentario;
@@ -251,5 +227,35 @@ public class GestionManagementService
             pageSize,
             totalPages,
             asesores!));
+    }
+
+    private (TipoContacto tipoContacto, EstadoCliente estadoResultante) ValidateRequest(
+        string? tipoContactoRaw,
+        string? comentario,
+        string? estadoResultanteRaw,
+        DateTime? proximoContacto,
+        DateTime? proximoContactoActual)
+    {
+        var errores = new List<string>();
+
+        var tipoClean = tipoContactoRaw?.Replace("ó", "o");
+        if (!Enum.TryParse<TipoContacto>(tipoClean, out var tipoContacto))
+            errores.Add("Tipo de contacto no válido. Valores permitidos: Llamada, WhatsApp, Correo, Reunión, Otro.");
+
+        if (!Enum.TryParse<EstadoCliente>(estadoResultanteRaw, out var estadoResultante))
+            errores.Add("Estado resultante no válido. Valores permitidos: Prospecto, Contactado, Interesado, NoInteresado, Cliente.");
+
+        if (string.IsNullOrWhiteSpace(comentario) || comentario.Length < 5)
+            errores.Add("El comentario es obligatorio y debe tener al menos 5 caracteres.");
+
+        if (proximoContacto.HasValue
+            && proximoContacto.Value < DateTime.UtcNow.Date
+            && proximoContacto.Value.Date != proximoContactoActual?.Date)
+            errores.Add("El próximo contacto no puede ser una fecha pasada.");
+
+        if (errores.Any())
+            throw new ValidationException(errores);
+
+        return (tipoContacto, estadoResultante);
     }
 }
