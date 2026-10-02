@@ -16,4 +16,15 @@ public record ClienteModel
         DateTime FechaCreacion,
         DateTime FechaActualizacion
     );
+    
+    public record ClienteRequest(
+        string Nombre,
+        string Cuit,
+        string? Telefono,
+        string? Email,
+        EstadoCliente Estado,
+        string? Asesor
+    );
+    
+  
 }

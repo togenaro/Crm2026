@@ -1,6 +1,7 @@
 using zocoCrm2026Back.Application.Services;
 using zocoCrm2026Back.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
+using zocoCrm2026Back.Application.Dtos;
 
 namespace zocoCrm2026Back.Api.Controllers;
 
@@ -34,5 +35,14 @@ public class ClientesController : ControllerBase
     {
         var cliente = await _clienteService.GetClienteById(id);
         return Ok(cliente);
+    }
+    
+    
+    [HttpPost]
+    public async Task<IActionResult> AddCliente(
+        [FromBody] ClienteModel.ClienteRequest request)
+    {
+        var cliente = await _clienteService.AddCliente(request);
+        return Created($"api/clientes/{cliente.Id}", cliente);
     }
 }

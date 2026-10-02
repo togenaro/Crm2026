@@ -92,4 +92,40 @@ public class ClienteManagementService
             cliente.FechaCreacion,
             cliente.FechaActualizacion);
     }
+    
+    public async Task<ClienteModel.ClienteResponse> AddCliente(
+        ClienteModel.ClienteRequest request)
+    {
+        var exist = await _repository.First<Cliente>(
+            c => c.Cuit == request.Cuit);
+
+        if (exist != null)
+            throw new InvalidOperationException(
+                $"Ya existe un cliente con el CUIT {request.Cuit}");
+
+        var cliente = new Cliente
+        {
+            Nombre = request.Nombre,
+            Cuit = request.Cuit,
+            Telefono = request.Telefono,
+            Email = request.Email,
+            Estado = request.Estado,
+            Asesor = request.Asesor,
+            IsActive = true
+        };
+
+        await _repository.Add(cliente);
+
+        return new ClienteModel.ClienteResponse(
+            cliente.Id,
+            cliente.Nombre!,
+            cliente.Cuit!,
+            cliente.Telefono,
+            cliente.Email,
+            cliente.Estado,
+            cliente.Asesor,
+            cliente.ProximoContacto,
+            cliente.FechaCreacion,
+            cliente.FechaActualizacion);
+    }
 }
