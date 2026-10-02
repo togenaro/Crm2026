@@ -1,6 +1,6 @@
 import Sidebar from './components/layout/Sidebar';
 import Topbar from './components/layout/Topbar';
-import ClientesPage from './features/clientes/pages/ClientesPage';
+import ClienteDetailPage from './features/clientes/pages/ClienteDetailPage';
 
 export default function App() {
   return (
@@ -9,7 +9,7 @@ export default function App() {
       <div className="main-area">
         <Topbar />
         <main className="content-wrapper">
-          <ClientesPage />
+          <ClienteDetailPage />
         </main>
       </div>
     </div>

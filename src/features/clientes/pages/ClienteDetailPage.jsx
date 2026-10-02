@@ -13,6 +13,7 @@ import {
 } from '../../../components/ui/Icons';
 import GestionCard from '../../gestiones/components/GestionCard';
 import GestionModal from '../../gestiones/components/GestionModal';
+import ClienteModal from '../components/ClienteModal';
 import { clienteDetalleDemo } from '../data/clienteDetalleDemo';
 
 function formatDate(date) {
@@ -35,6 +36,7 @@ function statusClass(status) {
 
 export default function ClienteDetailPage() {
   const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
+  const [mostrarModalCliente, setMostrarModalCliente] = useState(false);
   const cliente = clienteDetalleDemo;
   const vencido = cliente.proximoContacto < '2026-10-02';
 
@@ -44,7 +46,7 @@ export default function ClienteDetailPage() {
         <div>
           <div className="detail-title-row">
             <h1 className="page-title">{cliente.nombre}</h1>
-            <button className="action-btn" type="button" title="Editar cliente" aria-label="Editar cliente">
+            <button className="action-btn" type="button" title="Editar cliente" aria-label="Editar cliente" onClick={() => setMostrarModalCliente(true)}>
               <IconEdit />
             </button>
           </div>
@@ -100,6 +102,9 @@ export default function ClienteDetailPage() {
       </section>
       {mostrarModalGestion && (
         <GestionModal cliente={cliente} onClose={() => setMostrarModalGestion(false)} />
+      )}
+      {mostrarModalCliente && (
+        <ClienteModal initial={cliente} onClose={() => setMostrarModalCliente(false)} />
       )}
     </div>
   );
