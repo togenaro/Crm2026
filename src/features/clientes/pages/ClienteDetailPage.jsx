@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   IconAlertTriangle,
   IconArrowUpDown,
@@ -11,6 +12,7 @@ import {
   IconUser,
 } from '../../../components/ui/Icons';
 import GestionCard from '../../gestiones/components/GestionCard';
+import GestionModal from '../../gestiones/components/GestionModal';
 import { clienteDetalleDemo } from '../data/clienteDetalleDemo';
 
 function formatDate(date) {
@@ -32,6 +34,7 @@ function statusClass(status) {
 }
 
 export default function ClienteDetailPage() {
+  const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
   const cliente = clienteDetalleDemo;
   const vencido = cliente.proximoContacto < '2026-10-02';
 
@@ -84,7 +87,7 @@ export default function ClienteDetailPage() {
             <button className="btn btn-outline btn-sm" type="button" title="Cambiar orden por fecha">
               <IconArrowUpDown /> Recientes
             </button>
-            <button className="btn btn-primary btn-sm" type="button">
+            <button className="btn btn-primary btn-sm" type="button" onClick={() => setMostrarModalGestion(true)}>
               <IconPlus /> Nueva gestión
             </button>
           </div>
@@ -95,6 +98,9 @@ export default function ClienteDetailPage() {
           ))}
         </div>
       </section>
+      {mostrarModalGestion && (
+        <GestionModal cliente={cliente} onClose={() => setMostrarModalGestion(false)} />
+      )}
     </div>
   );
 }

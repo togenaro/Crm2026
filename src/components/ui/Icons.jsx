@@ -74,3 +74,7 @@ export function IconEdit(props) {
 export function IconStatus(props) {
   return <IconFrame {...props}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" /></IconFrame>;
 }
+
+export function IconX(props) {
+  return <IconFrame {...props}><path d="m18 6-12 12M6 6l12 12" /></IconFrame>;
+}
