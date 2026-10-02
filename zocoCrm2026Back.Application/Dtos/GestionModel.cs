@@ -5,9 +5,9 @@ namespace zocoCrm2026Back.Application.Dtos;
 public record GestionModel
 {
     public record GestionRequest(
-        TipoContacto TipoContacto,
+        string? TipoContacto,
         string? Comentario,
-        EstadoCliente EstadoResultante,
+        string? EstadoResultante,
         DateTime? FechaGestion = null,
         DateTime? ProximoContacto = null,
         string? Asesor = null

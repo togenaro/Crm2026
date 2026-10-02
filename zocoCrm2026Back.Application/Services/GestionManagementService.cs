@@ -1,4 +1,5 @@
 using zocoCrm2026Back.Application.Dtos;
+using zocoCrm2026Back.Application.Exceptions;
 using zocoCrm2026Back.Domain.Entities;
 using zocoCrm2026Back.Domain.Interfaces;
 
@@ -21,18 +22,42 @@ public class GestionManagementService
         if (cliente == null || !cliente.IsActive)
             throw new KeyNotFoundException("Cliente no encontrado.");
 
+        var errores = new List<string>();
+
+        var tipoClean = request.TipoContacto?.Replace("ó", "o");
+        if (!Enum.TryParse<TipoContacto>(tipoClean, out var tipoContacto))
+            errores.Add("Tipo de contacto no válido. Valores permitidos: Llamada, WhatsApp, Correo, Reunión, Otro.");
+
+        if (!Enum.TryParse<EstadoCliente>(request.EstadoResultante, out var estadoResultante))
+            errores.Add("Estado resultante no válido. Valores permitidos: Prospecto, Contactado, Interesado, NoInteresado, Cliente.");
+
+        if (string.IsNullOrWhiteSpace(request.Comentario) || request.Comentario.Length < 5)
+            errores.Add("El comentario es obligatorio y debe tener al menos 5 caracteres.");
+
+        if (request.ProximoContacto.HasValue && request.ProximoContacto.Value < DateTime.UtcNow.Date)
+            errores.Add("El próximo contacto no puede ser una fecha pasada.");
+
+        if (errores.Any())
+            throw new ValidationException(errores);
+
         var gestion = new Gestion
         {
             ClienteId = clienteId,
-            TipoContacto = request.TipoContacto,
+            TipoContacto = tipoContacto,
             Comentario = request.Comentario,
-            EstadoResultante = request.EstadoResultante,
+            EstadoResultante = estadoResultante,
             FechaGestion = request.FechaGestion ?? DateTime.UtcNow,
             ProximoContacto = request.ProximoContacto,
             Asesor = request.Asesor ?? cliente.Asesor
         };
 
         await _repository.Add(gestion);
+
+        cliente.Estado = estadoResultante;
+        if (request.ProximoContacto.HasValue)
+            cliente.ProximoContacto = request.ProximoContacto;
+        cliente.FechaActualizacion = DateTime.UtcNow;
+        await _repository.Update(cliente);
 
         return new GestionModel.GestionResponse(
             gestion.Id,
