@@ -19,6 +19,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<IRepository, InMemoryRepository>();
 builder.Services.AddScoped<ClienteManagementService>();
 builder.Services.AddScoped<GestionManagementService>();
+builder.Services.AddScoped<DashboardService>();
 
 var app = builder.Build();
 
