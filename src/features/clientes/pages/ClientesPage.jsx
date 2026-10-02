@@ -4,7 +4,7 @@ import ClientesTable from '../components/ClientesTable';
 
 const TAMANO_PAGINA = 5;
 
-export default function ClientesPage({ clientes }) {
+export default function ClientesPage({ clientes, cargando, onGuardarCliente, onEliminarClientes }) {
   const [busqueda, setBusqueda] = useState('');
   const [estado, setEstado] = useState('');
   const [asesor, setAsesor] = useState('');
@@ -67,6 +67,7 @@ export default function ClientesPage({ clientes }) {
       </header>
 
       <KpiGrid resumen={resumen} />
+      {cargando && <p className="pagination-info">Cargando clientes y gestiones…</p>}
       <ClientesTable
         clientes={clientesVisibles}
         todosLosClientes={clientes}
@@ -95,6 +96,8 @@ export default function ClientesPage({ clientes }) {
         sortBy={sortBy}
         sortDir={sortDir}
         onOrdenar={ordenarPor}
+        onGuardarCliente={onGuardarCliente}
+        onEliminarClientes={onEliminarClientes}
       />
     </>
   );

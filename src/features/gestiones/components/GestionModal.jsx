@@ -7,6 +7,8 @@ export default function GestionModal({ cliente = null, clientes = [], onClose, o
   const [clienteId, setClienteId] = useState(cliente?.id ?? '');
   const [estado, setEstado] = useState(cliente?.estado ?? estados[0]);
   const [proximoContacto, setProximoContacto] = useState(cliente?.proximoContacto ?? '');
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState('');
   const now = new Date();
   const fechaActual = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
   const horaActual = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -20,19 +22,27 @@ export default function GestionModal({ cliente = null, clientes = [], onClose, o
     setProximoContacto(seleccionado?.proximoContacto ?? '');
   }
 
-  function guardarGestion(event) {
+  async function guardarGestion(event) {
     event.preventDefault();
     const campos = new FormData(event.currentTarget);
 
-    onGuardar({
-      clienteId: cliente?.id ?? clienteId,
-      tipoContacto: campos.get('tipoContacto'),
-      fechaGestion: campos.get('fechaGestion'),
-      horaGestion: campos.get('horaGestion'),
-      comentario: campos.get('comentario'),
-      estadoResultante: campos.get('estadoResultante'),
-      proximoContacto: campos.get('proximoContacto') || '',
-    });
+    setGuardando(true);
+    setError('');
+    try {
+      await onGuardar({
+        clienteId: cliente?.id ?? clienteId,
+        tipoContacto: campos.get('tipoContacto'),
+        fechaGestion: campos.get('fechaGestion'),
+        horaGestion: campos.get('horaGestion'),
+        comentario: campos.get('comentario'),
+        estadoResultante: campos.get('estadoResultante'),
+        proximoContacto: campos.get('proximoContacto') || '',
+      });
+    } catch (errorGuardado) {
+      setError(errorGuardado.message);
+    } finally {
+      setGuardando(false);
+    }
   }
 
   return (
@@ -97,8 +107,9 @@ export default function GestionModal({ cliente = null, clientes = [], onClose, o
           <footer className="modal-form-actions">
             <span className="form-required-legend">* Campos obligatorios</span>
             <button className="btn btn-outline" type="button" onClick={onClose}>Cancelar</button>
-            <button className="btn btn-primary" type="submit">Guardar gestión</button>
+            <button className="btn btn-primary" type="submit" disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar gestión'}</button>
           </footer>
+          {error && <p className="api-error" role="alert">{error}</p>}
         </form>
     </Modal>
   );

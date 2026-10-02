@@ -1441,3 +1441,8 @@ button {
     padding: 20px 16px;
   }
 }
+.api-error {
+  margin: 12px 0;
+  color: #b42318;
+  font-size: 0.9rem;
+}

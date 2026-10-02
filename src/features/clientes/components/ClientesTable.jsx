@@ -51,12 +51,16 @@ export default function ClientesTable({
   sortBy,
   sortDir,
   onOrdenar,
+  onGuardarCliente,
+  onEliminarClientes,
 }) {
   const navigate = useNavigate();
   const [mostrarModal, setMostrarModal] = useState(false);
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
   const [clienteAEditar, setClienteAEditar] = useState(null);
   const [seleccionados, setSeleccionados] = useState(() => new Set());
+  const [eliminando, setEliminando] = useState(false);
+  const [errorEliminacion, setErrorEliminacion] = useState('');
   const todosSeleccionados = clientes.length > 0 && clientes.every(cliente => seleccionados.has(cliente.id));
   const cantidadSeleccionada = seleccionados.size;
   const clienteSeleccionado = cantidadSeleccionada === 1
@@ -268,17 +272,30 @@ export default function ClientesTable({
           </button>
         </div>
       </footer>
-      {mostrarModal && <ClienteModal onClose={() => setMostrarModal(false)} />}
-      {clienteAEditar && <ClienteModal initial={clienteAEditar} onClose={() => setClienteAEditar(null)} />}
+      {mostrarModal && <ClienteModal onGuardar={datos => onGuardarCliente(datos)} onClose={() => setMostrarModal(false)} />}
+      {clienteAEditar && <ClienteModal initial={clienteAEditar} onGuardar={datos => onGuardarCliente(datos, clienteAEditar.id)} onClose={() => setClienteAEditar(null)} />}
       {mostrarConfirmacion && (
         <Modal title={`Eliminar ${cantidadSeleccionada} cliente(s)`} onClose={() => setMostrarConfirmacion(false)}>
           <div className="modal-body modal-form">
             <p className="delete-confirmation-message">
               Se archivarán {cantidadSeleccionada} cliente(s) junto con su historial de gestiones. Esta acción no se puede deshacer.
             </p>
+            {errorEliminacion && <p className="api-error" role="alert">{errorEliminacion}</p>}
             <div className="modal-form-actions">
               <button className="btn btn-outline" type="button" onClick={() => setMostrarConfirmacion(false)}>Cancelar</button>
-              <button className="btn btn-danger" type="button">Eliminar</button>
+              <button className="btn btn-danger" type="button" disabled={eliminando} onClick={async () => {
+                setEliminando(true);
+                setErrorEliminacion('');
+                try {
+                  await onEliminarClientes([...seleccionados]);
+                  setSeleccionados(new Set());
+                  setMostrarConfirmacion(false);
+                } catch (error) {
+                  setErrorEliminacion(error.message);
+                } finally {
+                  setEliminando(false);
+                }
+              }}>{eliminando ? 'Eliminando…' : 'Eliminar'}</button>
             </div>
           </div>
         </Modal>

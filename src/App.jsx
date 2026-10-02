@@ -1,45 +1,69 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import Sidebar from './components/layout/Sidebar';
 import Topbar from './components/layout/Topbar';
 import ClienteDetailPage from './features/clientes/pages/ClienteDetailPage';
 import ClientesPage from './features/clientes/pages/ClientesPage';
-import { clientesDisponiblesDemo } from './features/clientes/data/clientesDemo';
-import { gestionesDemo } from './features/gestiones/data/gestionesDemo';
+import { listarClientes, crearCliente, actualizarCliente, eliminarCliente } from './features/clientes/services/clienteService';
+import { crearGestion, listarGestiones } from './features/gestiones/services/gestionService';
 import GestionesPage from './features/gestiones/pages/GestionesPage';
 
 export default function App() {
-  const [clientes, setClientes] = useState(clientesDisponiblesDemo);
-  const [gestiones, setGestiones] = useState(gestionesDemo);
+  const [clientes, setClientes] = useState([]);
+  const [gestiones, setGestiones] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
 
-  function agregarGestion(datos) {
-    const cliente = clientes.find(item => String(item.id) === String(datos.clienteId));
-    if (!cliente) return;
+  const recargarDatos = useCallback(async () => {
+    const clientesActuales = await listarClientes();
+    const gestionesActuales = await listarGestiones(clientesActuales);
+    setClientes(clientesActuales);
+    setGestiones(gestionesActuales);
+    setError('');
+  }, []);
 
-    const fechaGestion = new Date(`${datos.fechaGestion}T${datos.horaGestion}:00`).toISOString();
-    const nuevaGestion = {
-      id: String(Date.now()),
-      clienteId: cliente.id,
-      clienteNombre: cliente.nombre,
-      clienteCuit: cliente.cuit,
-      tipoContacto: datos.tipoContacto,
-      fechaGestion,
-      comentario: datos.comentario,
-      estadoResultante: datos.estadoResultante,
-      proximoContacto: datos.proximoContacto,
-      asesor: cliente.asesor,
-    };
+  async function refrescarDespuesDeGuardar() {
+    try {
+      await recargarDatos();
+    } catch (errorCarga) {
+      setError(`El cambio se guardó, pero no se pudo actualizar la pantalla: ${errorCarga.message}`);
+    }
+  }
 
-    setGestiones(actuales => [nuevaGestion, ...actuales]);
-    setClientes(actuales => actuales.map(item => item.id === cliente.id
-      ? {
-        ...item,
-        estado: datos.estadoResultante,
-        proximoContacto: datos.proximoContacto,
-        fechaActualizacion: datos.fechaGestion,
-        vencido: Boolean(datos.proximoContacto && datos.proximoContacto < new Date().toISOString().slice(0, 10)),
+  useEffect(() => {
+    let activo = true;
+
+    async function cargarDatos() {
+      try {
+        await recargarDatos();
+      } catch (errorCarga) {
+        if (activo) setError(errorCarga.message);
+      } finally {
+        if (activo) setCargando(false);
       }
-      : item));
+    }
+
+    cargarDatos();
+    return () => { activo = false; };
+  }, [recargarDatos]);
+
+  async function guardarCliente(datos, clienteId) {
+    if (clienteId) await actualizarCliente(clienteId, datos);
+    else await crearCliente(datos);
+    await refrescarDespuesDeGuardar();
+  }
+
+  async function borrarClientes(ids) {
+    await Promise.all(ids.map(eliminarCliente));
+    await refrescarDespuesDeGuardar();
+  }
+
+  async function agregarGestion(datos) {
+    const cliente = clientes.find(item => String(item.id) === String(datos.clienteId));
+    if (!cliente) throw new Error('Seleccioná un cliente válido para registrar la gestión.');
+
+    await crearGestion(cliente.id, { ...datos, asesor: cliente.asesor });
+    await refrescarDespuesDeGuardar();
   }
 
   return (
@@ -48,10 +72,11 @@ export default function App() {
       <div className="main-area">
         <Topbar />
         <main className="content-wrapper">
+          {error && <p className="api-error" role="alert">{error}</p>}
           <Routes>
-            <Route path="/clientes" element={<ClientesPage clientes={clientes} />} />
-            <Route path="/clientes/:clienteId" element={<ClienteDetailPage clientes={clientes} gestiones={gestiones} onAgregarGestion={agregarGestion} />} />
-            <Route path="/gestiones" element={<GestionesPage clientes={clientes} gestiones={gestiones} onAgregarGestion={agregarGestion} />} />
+            <Route path="/clientes" element={<ClientesPage clientes={clientes} cargando={cargando} onGuardarCliente={guardarCliente} onEliminarClientes={borrarClientes} />} />
+            <Route path="/clientes/:clienteId" element={<ClienteDetailPage clientes={clientes} gestiones={gestiones} cargando={cargando} onGuardarCliente={guardarCliente} onAgregarGestion={agregarGestion} />} />
+            <Route path="/gestiones" element={<GestionesPage clientes={clientes} gestiones={gestiones} cargando={cargando} onAgregarGestion={agregarGestion} />} />
             <Route path="*" element={<Navigate to="/clientes" replace />} />
           </Routes>
         </main>

@@ -10,7 +10,7 @@ import GestionModal from '../components/GestionModal';
 const tiposContacto = ['Llamada', 'WhatsApp', 'Correo', 'Reunión', 'Otro'];
 const TAMANO_PAGINA = 5;
 
-export default function GestionesPage({ clientes, gestiones, onAgregarGestion }) {
+export default function GestionesPage({ clientes, gestiones, cargando, onAgregarGestion }) {
   const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [tipo, setTipo] = useState('');
@@ -107,7 +107,9 @@ export default function GestionesPage({ clientes, gestiones, onAgregarGestion })
         </div>
 
         <div className="full-history-list">
-          {gestionesFiltradas.length === 0 ? (
+          {cargando ? (
+            <p className="pagination-info">Cargando gestiones…</p>
+          ) : gestionesFiltradas.length === 0 ? (
             <p className="pagination-info">No se encontraron gestiones con esos criterios.</p>
           ) : gestionesVisibles.map(gestion => {
             const cliente = clientes.find(item => item.cuit === gestion.clienteCuit);
@@ -149,8 +151,8 @@ export default function GestionesPage({ clientes, gestiones, onAgregarGestion })
         <GestionModal
           clientes={clientes}
           onClose={() => setMostrarModalGestion(false)}
-          onGuardar={datos => {
-            onAgregarGestion(datos);
+          onGuardar={async datos => {
+            await onAgregarGestion(datos);
             setPagina(1);
             setMostrarModalGestion(false);
           }}

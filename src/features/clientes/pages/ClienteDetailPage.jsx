@@ -35,7 +35,7 @@ function statusClass(status) {
   return classes[status] || 'badge-prospecto';
 }
 
-export default function ClienteDetailPage({ clientes, gestiones, onAgregarGestion }) {
+export default function ClienteDetailPage({ clientes, gestiones, cargando, onGuardarCliente, onAgregarGestion }) {
   const { clienteId } = useParams();
   const location = useLocation();
   const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
@@ -45,11 +45,12 @@ export default function ClienteDetailPage({ clientes, gestiones, onAgregarGestio
   const clienteListado = clientes.find(cliente => String(cliente.id) === String(clienteId));
   const volverAGestiones = location.state?.from === '/gestiones';
 
+  if (cargando) return <p className="pagination-info">Cargando ficha del cliente…</p>;
   if (!clienteListado) return <Navigate to="/clientes" replace />;
 
   const cliente = {
     ...clienteListado,
-    gestiones: gestiones.filter(gestion => gestion.clienteCuit === clienteListado.cuit),
+    gestiones: gestiones.filter(gestion => String(gestion.clienteId) === String(clienteListado.id)),
   };
   const hoy = new Date().toISOString().slice(0, 10);
   const vencido = cliente.proximoContacto < hoy;
@@ -153,14 +154,14 @@ export default function ClienteDetailPage({ clientes, gestiones, onAgregarGestio
         <GestionModal
           cliente={cliente}
           onClose={() => setMostrarModalGestion(false)}
-          onGuardar={datos => {
-            onAgregarGestion(datos);
+          onGuardar={async datos => {
+            await onAgregarGestion(datos);
             setMostrarModalGestion(false);
           }}
         />
       )}
       {mostrarModalCliente && (
-        <ClienteModal initial={cliente} onClose={() => setMostrarModalCliente(false)} />
+        <ClienteModal initial={cliente} onClose={() => setMostrarModalCliente(false)} onGuardar={datos => onGuardarCliente(datos, cliente.id)} />
       )}
     </div>
   );
