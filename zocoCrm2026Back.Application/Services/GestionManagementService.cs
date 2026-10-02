@@ -13,6 +13,38 @@ public class GestionManagementService
         _repository = repository;
     }
 
+    public async Task<GestionModel.GestionResponse> AddGestion(
+        Guid clienteId,
+        GestionModel.GestionRequest request)
+    {
+        var cliente = await _repository.GetById<Cliente>(clienteId);
+        if (cliente == null || !cliente.IsActive)
+            throw new KeyNotFoundException("Cliente no encontrado.");
+
+        var gestion = new Gestion
+        {
+            ClienteId = clienteId,
+            TipoContacto = request.TipoContacto,
+            Comentario = request.Comentario,
+            EstadoResultante = request.EstadoResultante,
+            FechaGestion = request.FechaGestion ?? DateTime.UtcNow,
+            ProximoContacto = request.ProximoContacto,
+            Asesor = request.Asesor ?? cliente.Asesor
+        };
+
+        await _repository.Add(gestion);
+
+        return new GestionModel.GestionResponse(
+            gestion.Id,
+            gestion.ClienteId,
+            gestion.TipoContacto,
+            gestion.Comentario,
+            gestion.EstadoResultante,
+            gestion.FechaGestion,
+            gestion.ProximoContacto,
+            gestion.Asesor);
+    }
+
     public async Task<PagedResponse<GestionModel.GestionResponse>> GetGestiones(
         Guid clienteId,
         int page = 1,
