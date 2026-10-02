@@ -45,4 +45,13 @@ public class ClientesController : ControllerBase
         var cliente = await _clienteService.AddCliente(request);
         return Created($"api/clientes/{cliente.Id}", cliente);
     }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateCliente(
+        Guid id,
+        [FromBody] ClienteModel.ClienteUpdate request)
+    {
+        var cliente = await _clienteService.UpdateCliente(id, request);
+        return Ok(cliente);
+    }
 }

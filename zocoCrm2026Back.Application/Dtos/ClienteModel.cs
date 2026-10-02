@@ -25,6 +25,15 @@ public record ClienteModel
         EstadoCliente Estado,
         string? Asesor
     );
+
+    public record ClienteUpdate(
+        string Nombre,
+        string Cuit,
+        string? Telefono,
+        string? Email,
+        EstadoCliente Estado,
+        string? Asesor
+    );
     
   
 }

@@ -133,6 +133,47 @@ public class ClienteManagementService
             cliente.FechaCreacion,
             cliente.FechaActualizacion);
     }
+
+    public async Task<ClienteModel.ClienteResponse> UpdateCliente(
+        Guid id,
+        ClienteModel.ClienteUpdate update)
+    {
+        ValidateRequest(update.Nombre, update.Cuit, update.Email,
+            update.Estado, update.Asesor);
+
+        var cliente = await _repository.GetById<Cliente>(id);
+        if (cliente == null || !cliente.IsActive)
+            throw new KeyNotFoundException("Cliente no encontrado.");
+
+        var exist = await _repository.First<Cliente>(
+            c => c.Cuit == update.Cuit && c.Id != id);
+
+        if (exist != null)
+            throw new DuplicatedEntityException(
+                $"Ya existe un cliente con el CUIT {update.Cuit}");
+
+        cliente.Nombre = update.Nombre;
+        cliente.Cuit = update.Cuit;
+        cliente.Telefono = update.Telefono;
+        cliente.Email = update.Email;
+        cliente.Estado = update.Estado;
+        cliente.Asesor = update.Asesor;
+        cliente.FechaActualizacion = DateTime.UtcNow;
+
+        await _repository.Update(cliente);
+
+        return new ClienteModel.ClienteResponse(
+            cliente.Id,
+            cliente.Nombre!,
+            cliente.Cuit!,
+            cliente.Telefono,
+            cliente.Email,
+            cliente.Estado,
+            cliente.Asesor,
+            cliente.ProximoContacto,
+            cliente.FechaCreacion,
+            cliente.FechaActualizacion);
+    }
     
     private void ValidateRequest(
         string nombre, string cuit, string? email,
