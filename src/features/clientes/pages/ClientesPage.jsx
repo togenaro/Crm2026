@@ -22,6 +22,11 @@ export default function ClientesPage({ clientes, resumen, cargando, loadError, o
     setPagina(1);
   }
 
+  async function guardarCliente(datos, clienteId) {
+    await onGuardarCliente(datos, clienteId);
+    if (!clienteId) setPagina(1);
+  }
+
   const terminoBusqueda = busqueda.trim().toLocaleLowerCase('es');
   const asesores = [...new Set(clientes.map(cliente => cliente.asesor).filter(Boolean))]
     .sort((primero, segundo) => primero.localeCompare(segundo, 'es'));
@@ -83,7 +88,7 @@ export default function ClientesPage({ clientes, resumen, cargando, loadError, o
         sortBy={sortBy}
         sortDir={sortDir}
         onOrdenar={ordenarPor}
-        onGuardarCliente={onGuardarCliente}
+        onGuardarCliente={guardarCliente}
         onEliminarClientes={onEliminarClientes}
         cargando={cargando}
         loadError={loadError}

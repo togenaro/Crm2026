@@ -77,7 +77,7 @@ export default function App() {
     if (clienteId) await actualizarCliente(clienteId, datos);
     else await crearCliente(datos);
     showSuccess(clienteId ? 'Cliente actualizado.' : 'Cliente creado.');
-    await recargarDatos();
+    void recargarDatos();
   }
 
   async function borrarClientes(ids) {
@@ -92,13 +92,13 @@ export default function App() {
 
     await crearGestion(cliente.id, { ...datos, asesor: cliente.asesor });
     showSuccess('Gestión registrada.');
-    await recargarDatos();
+    void recargarDatos();
   }
 
   async function editarGestion(datos) {
     await actualizarGestion(datos.clienteId, datos.gestionId, datos);
     showSuccess('Gestión actualizada.');
-    await recargarDatos();
+    void recargarDatos();
   }
 
   return (
