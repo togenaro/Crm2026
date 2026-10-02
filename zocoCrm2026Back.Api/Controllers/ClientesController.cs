@@ -75,4 +75,23 @@ public class ClientesController : ControllerBase
         var result = await _gestionService.GetGestiones(id, page, pageSize);
         return Ok(result);
     }
+
+    [HttpPost("{id}/gestiones")]
+    public async Task<IActionResult> AddGestion(
+        Guid id,
+        [FromBody] GestionModel.GestionRequest request)
+    {
+        var gestion = await _gestionService.AddGestion(id, request);
+        return Created($"api/clientes/{id}/gestiones/{gestion.Id}", gestion);
+    }
+
+    [HttpPut("{id}/gestiones/{gestionId}")]
+    public async Task<IActionResult> UpdateGestion(
+        Guid id,
+        Guid gestionId,
+        [FromBody] GestionModel.GestionUpdate request)
+    {
+        var gestion = await _gestionService.UpdateGestion(id, gestionId, request);
+        return Ok(gestion);
+    }
 }
