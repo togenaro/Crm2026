@@ -1,18 +1,26 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   IconArrowUpDown,
   IconCalendar,
   IconSearch,
 } from '../../../components/ui/Icons';
 import GestionCard from '../components/GestionCard';
-import GestionModal from '../components/GestionModal';
+import GestionesFormModal from '../components/GestionesFormModal';
 import EmptyState from '../../../components/ui/EmptyState';
 import Pagination from '../../../components/ui/Pagination';
+import { useAuth } from '../../../context/AuthContext';
+import { useToast } from '../../../context/ToastContext';
+import { listarClientes } from '../../clientes/services/clienteService';
+import { crearGestion, actualizarGestion, listarGestiones } from '../services/gestionService';
+import { sortGestionesByDate, TIPOS_CONTACTO } from '../gestionHelpers';
 
-const tiposContacto = ['Llamada', 'WhatsApp', 'Correo', 'Reunión', 'Otro'];
 const TAMANO_PAGINA = 5;
 
-export default function GestionesPage({ clientes, gestiones, cargando, loadError, onAgregarGestion, onEditarGestion }) {
+export default function GestionesPage() {
+  const [clientes, setClientes] = useState([]);
+  const [gestiones, setGestiones] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
   const [gestionAEditar, setGestionAEditar] = useState(null);
   const [busqueda, setBusqueda] = useState('');
@@ -20,10 +28,47 @@ export default function GestionesPage({ clientes, gestiones, cargando, loadError
   const [asesor, setAsesor] = useState('');
   const [sortDir, setSortDir] = useState('desc');
   const [pagina, setPagina] = useState(1);
+  const { usuario } = useAuth();
+  const { showSuccess } = useToast();
+
+  const loadData = useCallback(async () => {
+    setCargando(true);
+    setLoadError('');
+    const [clientesResult, gestionesResult] = await Promise.allSettled([listarClientes(), listarGestiones()]);
+    if (clientesResult.status === 'fulfilled') setClientes(clientesResult.value);
+    else setClientes([]);
+    if (gestionesResult.status === 'fulfilled') setGestiones(gestionesResult.value);
+    else {
+      setGestiones([]);
+      setLoadError('No se pudieron cargar las gestiones.');
+    }
+    if (clientesResult.status === 'rejected' && gestionesResult.status === 'fulfilled') {
+      setLoadError('No se pudieron cargar los clientes.');
+    }
+    setCargando(false);
+  }, []);
+
+  useEffect(() => { void loadData(); }, [loadData]);
+
+  async function guardarGestion(datos) {
+    if (gestionAEditar) {
+      await actualizarGestion(datos.clienteId, gestionAEditar.id, datos);
+      showSuccess('Gestión actualizada.');
+    } else {
+      const cliente = clientes.find(item => String(item.id) === String(datos.clienteId));
+      if (!cliente) throw new Error('Seleccioná un cliente válido para registrar la gestión.');
+      await crearGestion(cliente.id, { ...datos, asesor: usuario?.nombre || cliente.asesor });
+      showSuccess('Gestión registrada.');
+    }
+    setGestionAEditar(null);
+    setPagina(1);
+    setMostrarModalGestion(false);
+    void loadData();
+  }
   const terminoBusqueda = busqueda.trim().toLocaleLowerCase('es');
   const asesores = [...new Set(gestiones.map(gestion => gestion.asesor).filter(Boolean))]
     .sort((primero, segundo) => primero.localeCompare(segundo, 'es'));
-  const gestionesFiltradas = gestiones
+  const gestionesFiltradas = sortGestionesByDate(gestiones, sortDir === 'desc')
     .filter(gestion => {
       const coincideBusqueda = !terminoBusqueda || [
         gestion.clienteNombre,
@@ -34,12 +79,6 @@ export default function GestionesPage({ clientes, gestiones, cargando, loadError
       const coincideAsesor = !asesor || gestion.asesor === asesor;
 
       return coincideBusqueda && coincideTipo && coincideAsesor;
-    })
-    .sort((primera, segunda) => {
-      const fechaPrimera = new Date(primera.fechaGestion).getTime();
-      const fechaSegunda = new Date(segunda.fechaGestion).getTime();
-
-      return sortDir === 'desc' ? fechaSegunda - fechaPrimera : fechaPrimera - fechaSegunda;
     });
   const totalPaginas = Math.max(1, Math.ceil(gestionesFiltradas.length / TAMANO_PAGINA));
   const indiceInicial = (pagina - 1) * TAMANO_PAGINA;
@@ -82,7 +121,7 @@ export default function GestionesPage({ clientes, gestiones, cargando, loadError
               setPagina(1);
             }} aria-label="Filtrar por tipo">
               <option value="">Todos los tipos</option>
-              {tiposContacto.map(tipo => <option key={tipo}>{tipo}</option>)}
+              {TIPOS_CONTACTO.map(tipo => <option key={tipo}>{tipo}</option>)}
             </select>
             <select className="filter-select" value={asesor} onChange={event => {
               setAsesor(event.target.value);
@@ -146,20 +185,14 @@ export default function GestionesPage({ clientes, gestiones, cargando, loadError
         )}
       </section>
       {mostrarModalGestion && (
-        <GestionModal
+        <GestionesFormModal
           clientes={clientes}
           editingGestion={gestionAEditar}
           onClose={() => {
             setGestionAEditar(null);
             setMostrarModalGestion(false);
           }}
-          onGuardar={async datos => {
-            if (gestionAEditar) await onEditarGestion({ ...datos, gestionId: gestionAEditar.id });
-            else await onAgregarGestion(datos);
-            setGestionAEditar(null);
-            setPagina(1);
-            setMostrarModalGestion(false);
-          }}
+          onGuardar={guardarGestion}
         />
       )}
     </div>

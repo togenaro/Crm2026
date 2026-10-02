@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import Modal from '../../../components/ui/Modal';
 import ApiErrorList from '../../../components/ui/ApiErrorList';
+import useApiFormSubmission from '../../../hooks/useApiFormSubmission';
+import { ESTADOS } from '../../clientes/clienteHelpers';
 
-const estados = ['Prospecto', 'Contactado', 'Interesado', 'No interesado', 'Cliente'];
-
-export default function GestionModal({ cliente = null, clientes = [], editingGestion = null, onClose, onGuardar }) {
+export default function GestionesFormModal({ cliente = null, clientes = [], editingGestion = null, onClose, onGuardar }) {
   const [clienteId, setClienteId] = useState(editingGestion?.clienteId ?? cliente?.id ?? '');
-  const [estado, setEstado] = useState(editingGestion?.estadoResultante ?? cliente?.estado ?? estados[0]);
+  const [estado, setEstado] = useState(editingGestion?.estadoResultante ?? cliente?.estado ?? ESTADOS[0]);
   const [proximoContacto, setProximoContacto] = useState(editingGestion?.proximoContacto ?? cliente?.proximoContacto ?? '');
-  const [error, setError] = useState('');
   const [erroresCampo, setErroresCampo] = useState({});
   const [intentoEnvio, setIntentoEnvio] = useState(false);
+  const { errors: apiErrors, submit, clearErrors } = useApiFormSubmission();
   const now = new Date();
   const fechaActual = now.toISOString().split('T')[0];
   const horaActual = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -40,7 +40,7 @@ export default function GestionModal({ cliente = null, clientes = [], editingGes
     const id = event.target.value;
     const seleccionado = clientes.find(item => String(item.id) === String(id));
     setClienteId(id);
-    setEstado(seleccionado?.estado ?? estados[0]);
+    setEstado(seleccionado?.estado ?? ESTADOS[0]);
     setProximoContacto(seleccionado?.proximoContacto ?? '');
     validarCambio('clienteId', id);
   }
@@ -66,12 +66,8 @@ export default function GestionModal({ cliente = null, clientes = [], editingGes
     setErroresCampo(errores);
     if (Object.keys(errores).length > 0) return;
 
-    setError('');
-    try {
-      await onGuardar(datos);
-    } catch (errorGuardado) {
-      setError(errorGuardado.message);
-    }
+    clearErrors();
+    await submit(() => onGuardar(datos));
   }
 
   return (
@@ -81,7 +77,7 @@ export default function GestionModal({ cliente = null, clientes = [], editingGes
       onClose={onClose}
     >
         <form className="modal-body modal-form" onSubmit={guardarGestion}>
-          <ApiErrorList errors={error ? [error] : []} />
+          <ApiErrorList errors={apiErrors} />
           {!cliente && !editingGestion && (
             <div className="form-group">
               <label className="form-label" htmlFor="gestion-cliente">Cliente *</label>
@@ -133,7 +129,7 @@ export default function GestionModal({ cliente = null, clientes = [], editingGes
                 validarCambio('estadoResultante', event.target.value);
               }}>
                 <option value="">Seleccionar estado…</option>
-                {estados.map(item => <option key={item}>{item}</option>)}
+                {ESTADOS.map(item => <option key={item}>{item}</option>)}
               </select>
               {erroresCampo.estadoResultante && <span className="form-error">{erroresCampo.estadoResultante}</span>}
             </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 import {
   IconAlertTriangle,
@@ -13,57 +13,100 @@ import {
   IconUser,
 } from '../../../components/ui/Icons';
 import GestionCard from '../../gestiones/components/GestionCard';
-import GestionModal from '../../gestiones/components/GestionModal';
-import ClienteModal from '../components/ClienteModal';
+import GestionesFormModal from '../../gestiones/components/GestionesFormModal';
+import ClienteFormModal from '../components/ClienteFormModal';
 import Pagination from '../../../components/ui/Pagination';
+import { useAuth } from '../../../context/AuthContext';
+import { useToast } from '../../../context/ToastContext';
+import { badgeClass, isOverdue } from '../clienteHelpers';
+import { obtenerCliente, actualizarCliente } from '../services/clienteService';
+import { crearGestion, actualizarGestion, listarGestionesPorCliente } from '../../gestiones/services/gestionService';
+import { formatDate } from '../../../utils/helpers';
+import { sortGestionesByDate } from '../../gestiones/gestionHelpers';
 
 const TAMANO_PAGINA_GESTIONES = 5;
 
-function formatDate(date) {
-  if (!date) return '—';
-  const [year, month, day] = date.split('-');
-  return `${day}/${month}/${year}`;
-}
-
-function statusClass(status) {
-  const classes = {
-    Prospecto: 'badge-prospecto',
-    Contactado: 'badge-contactado',
-    Interesado: 'badge-interesado',
-    NoInteresado: 'badge-no_interesado',
-    'No interesado': 'badge-no_interesado',
-    Cliente: 'badge-cliente',
-  };
-  return classes[status] || 'badge-prospecto';
-}
-
-export default function ClienteDetailPage({ clientes, gestiones, cargando, cargandoGestiones, errorCliente, errorGestiones, onGuardarCliente, onAgregarGestion, onEditarGestion }) {
+export default function ClienteDetailPage() {
   const { clienteId } = useParams();
   const location = useLocation();
+  const [cliente, setCliente] = useState(null);
+  const [gestiones, setGestiones] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [cargandoGestiones, setCargandoGestiones] = useState(true);
+  const [errorCliente, setErrorCliente] = useState('');
+  const [errorGestiones, setErrorGestiones] = useState('');
   const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
   const [mostrarModalCliente, setMostrarModalCliente] = useState(false);
   const [gestionAEditar, setGestionAEditar] = useState(null);
   const [sortDir, setSortDir] = useState('desc');
   const [paginaGestiones, setPaginaGestiones] = useState(1);
-  const clienteListado = clientes.find(cliente => String(cliente.id) === String(clienteId));
+  const idCargado = useRef(null);
+  const { usuario } = useAuth();
+  const { showSuccess } = useToast();
   const volverAGestiones = location.state?.from === '/gestiones';
 
-  if (errorCliente) return <div className="error-banner">No se pudieron cargar los datos del cliente.</div>;
+  const loadData = useCallback(async () => {
+    const nuevoCliente = idCargado.current !== clienteId;
+    if (nuevoCliente) {
+      idCargado.current = clienteId;
+      setCliente(null);
+      setCargando(true);
+      setPaginaGestiones(1);
+    }
+    setErrorCliente('');
+    setErrorGestiones('');
+    setCargandoGestiones(true);
+
+    let clienteActual;
+    try {
+      clienteActual = await obtenerCliente(clienteId);
+      setCliente(clienteActual);
+      setCargando(false);
+    } catch {
+      setCliente(null);
+      setErrorCliente('No se pudieron cargar los datos del cliente.');
+      setCargando(false);
+      setCargandoGestiones(false);
+      return;
+    }
+
+    try {
+      setGestiones(await listarGestionesPorCliente(clienteId, clienteActual));
+    } catch {
+      setGestiones([]);
+      setErrorGestiones('No se pudieron cargar las gestiones de este cliente.');
+    } finally {
+      setCargandoGestiones(false);
+    }
+  }, [clienteId]);
+
+  useEffect(() => { void loadData(); }, [loadData]);
+
+  async function guardarCliente(datos) {
+    await actualizarCliente(cliente.id, datos);
+    showSuccess('Cliente actualizado.');
+    void loadData();
+  }
+
+  async function guardarGestion(datos) {
+    if (gestionAEditar) {
+      await actualizarGestion(cliente.id, gestionAEditar.id, datos);
+      showSuccess('Gestión actualizada.');
+    } else {
+      await crearGestion(cliente.id, { ...datos, asesor: usuario?.nombre || cliente.asesor });
+      showSuccess('Gestión registrada.');
+    }
+    setGestionAEditar(null);
+    setMostrarModalGestion(false);
+    void loadData();
+  }
+
+  if (errorCliente) return <div className="error-banner">{errorCliente}</div>;
   if (cargando) return <div className="empty-state">Cargando cliente…</div>;
-  if (!clienteListado) return <Navigate to="/clientes" replace />;
+  if (!cliente) return <Navigate to="/clientes" replace />;
 
-  const cliente = {
-    ...clienteListado,
-    gestiones: gestiones.filter(gestion => String(gestion.clienteId) === String(clienteListado.id)),
-  };
-  const hoy = new Date().toISOString().slice(0, 10);
-  const vencido = cliente.proximoContacto < hoy;
-  const gestionesOrdenadas = [...cliente.gestiones].sort((primera, segunda) => {
-      const fechaPrimera = new Date(primera.fechaGestion).getTime();
-      const fechaSegunda = new Date(segunda.fechaGestion).getTime();
-
-      return sortDir === 'desc' ? fechaSegunda - fechaPrimera : fechaPrimera - fechaSegunda;
-    });
+  const vencido = isOverdue(cliente.proximoContacto);
+  const gestionesOrdenadas = sortGestionesByDate(gestiones, sortDir === 'desc');
   const totalPaginasGestiones = Math.max(1, Math.ceil(gestionesOrdenadas.length / TAMANO_PAGINA_GESTIONES));
   const inicioGestiones = (paginaGestiones - 1) * TAMANO_PAGINA_GESTIONES;
   const gestionesVisibles = gestionesOrdenadas.slice(inicioGestiones, inicioGestiones + TAMANO_PAGINA_GESTIONES);
@@ -91,7 +134,7 @@ export default function ClienteDetailPage({ clientes, gestiones, cargando, carga
         <div className="full-meta-item">
           <span className="full-meta-label"><IconStatus /> Estado actual</span>
           <span className="full-meta-value">
-            <span className={`badge ${statusClass(cliente.estado)}`}>{cliente.estado}</span>
+            <span className={`badge ${badgeClass(cliente.estado)}`}>{cliente.estado}</span>
           </span>
         </div>
         <div className="full-meta-item">
@@ -114,7 +157,7 @@ export default function ClienteDetailPage({ clientes, gestiones, cargando, carga
         <div className="table-info-bar">
           <div className="table-info-bar-left">
             <strong>
-              Historial de Gestiones ({errorGestiones ? '—' : cliente.gestiones.length})
+              Historial de Gestiones ({errorGestiones ? '—' : gestiones.length})
             </strong>
           </div>
           <div className="table-info-bar-right">
@@ -155,41 +198,33 @@ export default function ClienteDetailPage({ clientes, gestiones, cargando, carga
           <Pagination
             page={paginaGestiones}
             totalPages={totalPaginasGestiones}
-            totalItems={cliente.gestiones.length}
+            totalItems={gestiones.length}
             pageSize={TAMANO_PAGINA_GESTIONES}
             onPageChange={setPaginaGestiones}
           />
         )}
       </section>
       {mostrarModalGestion && (
-        <GestionModal
+        <GestionesFormModal
           cliente={cliente}
           editingGestion={gestionAEditar}
           onClose={() => {
             setGestionAEditar(null);
             setMostrarModalGestion(false);
           }}
-          onGuardar={async datos => {
-            if (gestionAEditar) await onEditarGestion({ ...datos, gestionId: gestionAEditar.id });
-            else await onAgregarGestion(datos);
-            setGestionAEditar(null);
-            setMostrarModalGestion(false);
-          }}
+          onGuardar={guardarGestion}
         />
       )}
       {gestionAEditar && !mostrarModalGestion && (
-        <GestionModal
+        <GestionesFormModal
           cliente={cliente}
           editingGestion={gestionAEditar}
           onClose={() => setGestionAEditar(null)}
-          onGuardar={async datos => {
-            await onEditarGestion({ ...datos, gestionId: gestionAEditar.id });
-            setGestionAEditar(null);
-          }}
+          onGuardar={guardarGestion}
         />
       )}
       {mostrarModalCliente && (
-        <ClienteModal clientes={clientes} initial={cliente} onClose={() => setMostrarModalCliente(false)} onGuardar={datos => onGuardarCliente(datos, cliente.id)} />
+        <ClienteFormModal clientes={[cliente]} initial={cliente} onClose={() => setMostrarModalCliente(false)} onGuardar={guardarCliente} />
       )}
     </div>
   );

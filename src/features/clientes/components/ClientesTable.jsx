@@ -9,31 +9,12 @@ import {
   IconUsers,
 } from '../../../components/ui/Icons';
 import Modal from '../../../components/ui/Modal';
-import ClienteModal from './ClienteModal';
+import ClienteFormModal from './ClienteFormModal';
 import EmptyState from '../../../components/ui/EmptyState';
 import Pagination from '../../../components/ui/Pagination';
 import ApiErrorList from '../../../components/ui/ApiErrorList';
-
-function formatDate(date) {
-  if (!date) return '—';
-  const [year, month, day] = date.split('-');
-  return `${day}/${month}/${year}`;
-}
-
-function initials(name) {
-  return name.split(' ').slice(0, 2).map(part => part[0]).join('').toUpperCase();
-}
-
-function statusClass(status) {
-  const classes = {
-    Prospecto: 'badge-prospecto',
-    Contactado: 'badge-contactado',
-    Interesado: 'badge-interesado',
-    'No interesado': 'badge-no_interesado',
-    Cliente: 'badge-cliente',
-  };
-  return classes[status] || 'badge-prospecto';
-}
+import { badgeClass } from '../clienteHelpers';
+import { formatDate, getInitials } from '../../../utils/helpers';
 
 export default function ClientesTable({
   clientes,
@@ -230,11 +211,11 @@ export default function ClientesTable({
                 }}
               >
                 <td className="td-check"><input className="crm-checkbox" type="checkbox" aria-label={`Seleccionar ${cliente.nombre}`} checked={seleccionados.has(cliente.id)} onChange={() => alternarSeleccion(cliente.id)} /></td>
-                <td><div className="td-name"><span className="td-avatar">{initials(cliente.nombre)}</span>{cliente.nombre}</div></td>
+                <td><div className="td-name"><span className="td-avatar">{getInitials(cliente.nombre)}</span>{cliente.nombre}</div></td>
                 <td className="td-mono">{cliente.cuit}</td>
                 <td className="cell-secondary cell-nowrap">{cliente.telefono}</td>
                 <td className="cell-secondary cell-nowrap">{cliente.email || '—'}</td>
-                <td><span className={`badge ${statusClass(cliente.estado)}`}>{cliente.estado}</span></td>
+                <td><span className={`badge ${badgeClass(cliente.estado)}`}>{cliente.estado}</span></td>
                 <td className="cell-secondary">{cliente.asesor}</td>
                 <td>
                   <div className={`date-cell${cliente.vencido ? ' overdue' : ''}`}>
@@ -258,8 +239,8 @@ export default function ClientesTable({
           onPageChange={onPaginaChange}
         />
       )}
-      {mostrarModal && <ClienteModal clientes={todosLosClientes} onGuardar={datos => onGuardarCliente(datos)} onClose={() => setMostrarModal(false)} />}
-      {clienteAEditar && <ClienteModal clientes={todosLosClientes} initial={clienteAEditar} onGuardar={datos => onGuardarCliente(datos, clienteAEditar.id)} onClose={() => setClienteAEditar(null)} />}
+      {mostrarModal && <ClienteFormModal clientes={todosLosClientes} onGuardar={datos => onGuardarCliente(datos)} onClose={() => setMostrarModal(false)} />}
+      {clienteAEditar && <ClienteFormModal clientes={todosLosClientes} initial={clienteAEditar} onGuardar={datos => onGuardarCliente(datos, clienteAEditar.id)} onClose={() => setClienteAEditar(null)} />}
       {mostrarConfirmacion && (
         <Modal title={`Eliminar ${cantidadSeleccionada} cliente(s)`} onClose={() => setMostrarConfirmacion(false)}>
           <div className="modal-body modal-form">

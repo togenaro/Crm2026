@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import Modal from '../../../components/ui/Modal';
 import ApiErrorList from '../../../components/ui/ApiErrorList';
+import useApiFormSubmission from '../../../hooks/useApiFormSubmission';
+import { ESTADOS } from '../clienteHelpers';
 
-const estados = ['Prospecto', 'Contactado', 'Interesado', 'No interesado', 'Cliente'];
-
-export default function ClienteModal({ initial = null, clientes = [], onClose, onGuardar }) {
+export default function ClienteFormModal({ initial = null, clientes = [], onClose, onGuardar }) {
   const isEdit = initial !== null;
-  const [error, setError] = useState('');
   const [erroresCampo, setErroresCampo] = useState({});
   const [intentoEnvio, setIntentoEnvio] = useState(false);
+  const { errors: apiErrors, submit, clearErrors } = useApiFormSubmission();
 
   function obtenerErrorCampo(nombre, valor) {
     if (nombre === 'nombre' && !valor.trim()) return 'El nombre es obligatorio.';
@@ -57,20 +57,15 @@ export default function ClienteModal({ initial = null, clientes = [], onClose, o
     setErroresCampo(errores);
     if (Object.keys(errores).length > 0) return;
 
-    setError('');
-
-    try {
-      await onGuardar(datos);
-      onClose();
-    } catch (errorGuardado) {
-      setError(errorGuardado.message);
-    }
+    clearErrors();
+    const guardado = await submit(() => onGuardar(datos));
+    if (guardado) onClose();
   }
 
   return (
     <Modal title={isEdit ? 'Editar cliente' : 'Nuevo cliente'} onClose={onClose}>
       <form className="modal-body modal-form" onSubmit={guardar}>
-        <ApiErrorList errors={error ? [error] : []} />
+        <ApiErrorList errors={apiErrors} />
         <div className="form-group">
           <label className="form-label" htmlFor="cliente-nombre">Nombre *</label>
           <input className="search-input" id="cliente-nombre" name="nombre" placeholder="Nombre del cliente…" defaultValue={initial?.nombre ?? ''} onChange={event => validarCambio('nombre', event.target.value)} />
@@ -98,7 +93,7 @@ export default function ClienteModal({ initial = null, clientes = [], onClose, o
           <div className="form-group">
             <label className="form-label" htmlFor="cliente-estado">Estado</label>
             <select className="filter-select" id="cliente-estado" name="estado" defaultValue={initial?.estado ?? 'Prospecto'}>
-              {estados.map(estado => <option key={estado}>{estado}</option>)}
+              {ESTADOS.map(estado => <option key={estado}>{estado}</option>)}
             </select>
           </div>
           <div className="form-group">

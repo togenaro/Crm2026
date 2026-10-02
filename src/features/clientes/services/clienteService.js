@@ -42,6 +42,11 @@ export async function listarClientes() {
   return resultado.items.map(clienteDesdeApi);
 }
 
+export async function obtenerCliente(id) {
+  const { data: cliente } = await axiosClient.get(`/clientes/${id}`);
+  return clienteDesdeApi(cliente);
+}
+
 export async function crearCliente(datos) {
   const { data: cliente } = await axiosClient.post('/clientes', clienteParaApi(datos));
   return clienteDesdeApi(cliente);

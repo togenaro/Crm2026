@@ -1,40 +1,7 @@
 import { IconCalendar } from '../../../components/ui/Icons';
 import { Link } from 'react-router-dom';
-
-function formatDate(date) {
-  if (!date) return '—';
-  const [year, month, day] = date.split('-');
-  return `${day}/${month}/${year}`;
-}
-
-function formatDateTime(dateTime) {
-  const date = new Date(dateTime);
-  const formattedDate = new Intl.DateTimeFormat('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    timeZone: 'America/Argentina/Buenos_Aires',
-  }).format(date);
-  const formattedTime = new Intl.DateTimeFormat('es-AR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: 'America/Argentina/Buenos_Aires',
-  }).format(date);
-
-  return `${formattedDate} · ${formattedTime}`;
-}
-
-function statusClass(status) {
-  const classes = {
-    Prospecto: 'badge-prospecto',
-    Contactado: 'badge-contactado',
-    Interesado: 'badge-interesado',
-    NoInteresado: 'badge-no_interesado',
-    Cliente: 'badge-cliente',
-  };
-  return classes[status] || 'badge-prospecto';
-}
+import { badgeClass } from '../../clientes/clienteHelpers';
+import { formatDate, formatDateTime } from '../../../utils/helpers';
 
 export default function GestionCard({ gestion, showCliente = true, clienteId, onClickGestion }) {
   return (
@@ -87,7 +54,7 @@ export default function GestionCard({ gestion, showCliente = true, clienteId, on
         </span>
         <span className="gestion-card-estado">
           Estado resultante:
-          <span className={`badge ${statusClass(gestion.estadoResultante)}`}>
+          <span className={`badge ${badgeClass(gestion.estadoResultante)}`}>
             {gestion.estadoResultante === 'NoInteresado' ? 'No interesado' : gestion.estadoResultante}
           </span>
         </span>

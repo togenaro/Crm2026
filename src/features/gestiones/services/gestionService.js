@@ -40,6 +40,14 @@ export async function listarGestiones(clientes) {
   return resultado.items.map(gestion => gestionDesdeApi(gestion, clientes));
 }
 
+export async function listarGestionesPorCliente(clienteId, cliente) {
+  const { data: resultado } = await axiosClient.get(`/clientes/${clienteId}/gestiones`, {
+    params: { page: 1, pageSize: 1000 },
+  });
+  const items = Array.isArray(resultado) ? resultado : resultado.items;
+  return items.map(gestion => gestionDesdeApi(gestion, cliente ? [cliente] : []));
+}
+
 export async function crearGestion(clienteId, datos) {
   const fechaGestion = new Date(`${datos.fechaGestion}T${datos.horaGestion}:00`).toISOString();
   const proximoContacto = datos.proximoContacto ? `${datos.proximoContacto}T12:00:00` : null;
