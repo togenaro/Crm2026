@@ -108,5 +108,125 @@
     "fechaGestion": "2026-09-27T11:00:00Z",
     "proximoContacto": "2026-09-29T16:00:00Z",
     "asesor": "Carlos Ruiz"
+  },
+  {
+    "id": "c1111111-1111-4111-8111-111111111111",
+    "clienteId": "07111111-1111-4111-8111-111111111111",
+    "tipoContacto": "Correo",
+    "comentario": "Se envió la propuesta inicial de servicios.",
+    "estadoResultante": "Contactado",
+    "fechaGestion": "2026-09-29T11:00:00Z",
+    "proximoContacto": "2026-10-02T10:00:00Z",
+    "asesor": "Sofía Ramírez"
+  },
+  {
+    "id": "c1222222-2222-4222-8222-222222222222",
+    "clienteId": "07111111-1111-4111-8111-111111111111",
+    "tipoContacto": "Llamada",
+    "comentario": "Revisamos la propuesta y solicitó una cotización detallada.",
+    "estadoResultante": "Interesado",
+    "fechaGestion": "2026-10-01T17:00:00Z",
+    "proximoContacto": "2026-10-07T10:00:00Z",
+    "asesor": "Sofía Ramírez"
+  },
+  {
+    "id": "c1333333-3333-4333-8333-333333333333",
+    "clienteId": "08222222-2222-4222-8222-222222222222",
+    "tipoContacto": "Reunion",
+    "comentario": "Presentación del servicio y relevamiento de necesidades.",
+    "estadoResultante": "Interesado",
+    "fechaGestion": "2026-09-28T09:30:00Z",
+    "proximoContacto": "2026-10-05T14:00:00Z",
+    "asesor": "Pablo Herrera"
+  },
+  {
+    "id": "c1444444-4444-4444-8444-444444444444",
+    "clienteId": "08222222-2222-4222-8222-222222222222",
+    "tipoContacto": "Llamada",
+    "comentario": "Confirmó la contratación y coordinamos el inicio.",
+    "estadoResultante": "Cliente",
+    "fechaGestion": "2026-10-01T12:15:00Z",
+    "proximoContacto": "2026-10-20T13:00:00Z",
+    "asesor": "Pablo Herrera"
+  },
+  {
+    "id": "c1555555-5555-4555-8555-555555555555",
+    "clienteId": "09333333-3333-4333-8333-333333333333",
+    "tipoContacto": "WhatsApp",
+    "comentario": "Se compartió información general del servicio.",
+    "estadoResultante": "Contactado",
+    "fechaGestion": "2026-09-12T13:00:00Z",
+    "proximoContacto": "2026-09-20T10:00:00Z",
+    "asesor": "Carlos Ruiz"
+  },
+  {
+    "id": "c1666666-6666-4666-8666-666666666666",
+    "clienteId": "09333333-3333-4333-8333-333333333333",
+    "tipoContacto": "Llamada",
+    "comentario": "Indicó que por el momento no avanzará con la propuesta.",
+    "estadoResultante": "NoInteresado",
+    "fechaGestion": "2026-09-22T15:45:00Z",
+    "proximoContacto": null,
+    "asesor": "Carlos Ruiz"
+  },
+  {
+    "id": "c1777777-7777-4777-8777-777777777777",
+    "clienteId": "0a444444-4444-4444-8444-444444444444",
+    "tipoContacto": "Correo",
+    "comentario": "Se envió el catálogo y los datos de contacto.",
+    "estadoResultante": "Prospecto",
+    "fechaGestion": "2026-09-21T09:00:00Z",
+    "proximoContacto": "2026-10-01T11:00:00Z",
+    "asesor": "Sofía Ramírez"
+  },
+  {
+    "id": "c1888888-8888-4888-8888-888888888888",
+    "clienteId": "0a444444-4444-4444-8444-444444444444",
+    "tipoContacto": "WhatsApp",
+    "comentario": "Respondió la consulta y pidió coordinar una demostración.",
+    "estadoResultante": "Contactado",
+    "fechaGestion": "2026-10-01T16:30:00Z",
+    "proximoContacto": "2026-10-01T11:00:00Z",
+    "asesor": "Sofía Ramírez"
+  },
+  {
+    "id": "c1999999-9999-4999-8999-999999999999",
+    "clienteId": "0b555555-5555-4555-8555-555555555555",
+    "tipoContacto": "Llamada",
+    "comentario": "Seguimiento de la cuenta y consulta por necesidades actuales.",
+    "estadoResultante": "Contactado",
+    "fechaGestion": "2026-09-18T10:00:00Z",
+    "proximoContacto": "2026-09-25T10:00:00Z",
+    "asesor": "Pablo Herrera"
+  },
+  {
+    "id": "ca000000-0000-4000-8000-000000000010",
+    "clienteId": "0b555555-5555-4555-8555-555555555555",
+    "tipoContacto": "Reunion",
+    "comentario": "Se acordó avanzar con el servicio y revisar resultados.",
+    "estadoResultante": "Cliente",
+    "fechaGestion": "2026-09-30T14:00:00Z",
+    "proximoContacto": "2026-10-12T09:00:00Z",
+    "asesor": "Pablo Herrera"
+  },
+  {
+    "id": "cb000000-0000-4000-8000-000000000011",
+    "clienteId": "0c666666-6666-4666-8666-666666666666",
+    "tipoContacto": "WhatsApp",
+    "comentario": "Se enviaron detalles de planes y precios.",
+    "estadoResultante": "Contactado",
+    "fechaGestion": "2026-09-15T12:00:00Z",
+    "proximoContacto": "2026-09-25T15:00:00Z",
+    "asesor": "Sofía Ramírez"
+  },
+  {
+    "id": "cc000000-0000-4000-8000-000000000012",
+    "clienteId": "0c666666-6666-4666-8666-666666666666",
+    "tipoContacto": "Correo",
+    "comentario": "Recibió la propuesta y pidió unos días para evaluarla.",
+    "estadoResultante": "Interesado",
+    "fechaGestion": "2026-10-01T10:20:00Z",
+    "proximoContacto": "2026-09-30T15:00:00Z",
+    "asesor": "Sofía Ramírez"
   }
 ]

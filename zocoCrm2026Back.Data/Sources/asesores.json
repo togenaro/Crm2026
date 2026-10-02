@@ -24,9 +24,21 @@
     "passwordHash": "100000.MQmxhUtMcpfr4EKnKhBi3w==./VLmPHSizd3BWSfNmmfOKozPJNW2/EdOQXvnj7vIUiQ="
   },
   {
-    "id": "a1000000-0000-0000-0000-000000000005",
+    "id": "e7dc45d0-4819-41b8-ab59-7979cc9e6f40",
     "usuario": "carlos.ruiz",
     "nombre": "Carlos Ruiz",
     "passwordHash": "100000.ijyE6amjSzjbHiQyTD3evg==.ZFK2MYyHmRTzDb3uAv0O+IUh+sdEYH5q61Rn8Tli1+8="
+  },
+  {
+    "id": "a1000000-0000-0000-0000-000000000006",
+    "usuario": "sofia",
+    "nombre": "Sofía Ramírez",
+    "passwordHash": "100000.NTG6mMhseXa7nI3o3Ek87g==.MVEPezgZjHEdGhQwCNwmZsckUO8xtwWlE6kfA/tFsv8="
+  },
+  {
+    "id": "a1000000-0000-0000-0000-000000000007",
+    "usuario": "pablo",
+    "nombre": "Pablo Herrera",
+    "passwordHash": "100000.mhrT+o8Ed4OBypULZBAGUA==.LWPy8x5PizNaJYcet0OO90asPYLuMfQOX/JOeakLwcs="
   }
 ]

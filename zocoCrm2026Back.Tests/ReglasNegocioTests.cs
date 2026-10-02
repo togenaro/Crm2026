@@ -24,6 +24,11 @@ public class ReglasNegocioTests
     public async Task CrearCliente_ConCuitDuplicado_LanzaExcepcion()
     {
         await using var context = CreateContext();
+        context.Asesores.AddRange(
+            new Asesor { Usuario = "laura", Nombre = "Laura Gómez", PasswordHash = "test" },
+            new Asesor { Usuario = "carlos.ruiz", Nombre = "Carlos Ruiz", PasswordHash = "test" });
+        await context.SaveChangesAsync();
+
         var repository = new EfRepository(context);
         var clienteService = new ClienteManagementService(repository);
 
@@ -53,6 +58,14 @@ public class ReglasNegocioTests
     public async Task RegistrarGestion_ActualizaEstadoYProximoContactoDelCliente()
     {
         await using var context = CreateContext();
+        context.Asesores.Add(new Asesor
+        {
+            Usuario = "asesor.test",
+            Nombre = "Asesor Test",
+            PasswordHash = "test"
+        });
+        await context.SaveChangesAsync();
+
         var repository = new EfRepository(context);
         var clienteService = new ClienteManagementService(repository);
         var gestionService = new GestionManagementService(repository);
