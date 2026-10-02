@@ -35,7 +35,7 @@ function statusClass(status) {
   return classes[status] || 'badge-prospecto';
 }
 
-export default function GestionCard({ gestion }) {
+export default function GestionCard({ gestion, showCliente = true }) {
   return (
     <article className="gestion-card">
       <header className="gestion-card-header">
@@ -45,10 +45,12 @@ export default function GestionCard({ gestion }) {
         </span>
       </header>
 
-      <div className="gestion-card-cliente">
-        <strong>{gestion.clienteNombre}</strong>
-        <span>CUIT {gestion.clienteCuit}</span>
-      </div>
+      {showCliente && (
+        <div className="gestion-card-cliente">
+          <strong>{gestion.clienteNombre}</strong>
+          <span>CUIT {gestion.clienteCuit}</span>
+        </div>
+      )}
 
       <div className="gestion-card-body">
         <p>{gestion.comentario}</p>

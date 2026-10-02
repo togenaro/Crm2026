@@ -50,3 +50,27 @@ export function IconChevronDown(props) {
 export function IconArrowUpDown(props) {
   return <IconFrame {...props}><path d="m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16" /></IconFrame>;
 }
+
+export function IconPlus(props) {
+  return <IconFrame {...props}><path d="M12 5v14M5 12h14" /></IconFrame>;
+}
+
+export function IconUser(props) {
+  return <IconFrame {...props}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></IconFrame>;
+}
+
+export function IconMail(props) {
+  return <IconFrame {...props}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></IconFrame>;
+}
+
+export function IconPhone(props) {
+  return <IconFrame {...props}><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1A19.5 19.5 0 0 1 4.7 12a19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1l-1.2 1a16 16 0 0 0 6 6l1-1a2 2 0 0 1 2.1-.5c.9.4 1.8.6 2.8.7a2 2 0 0 1 1.7 2.1Z" /></IconFrame>;
+}
+
+export function IconEdit(props) {
+  return <IconFrame {...props}><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" /></IconFrame>;
+}
+
+export function IconStatus(props) {
+  return <IconFrame {...props}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" /></IconFrame>;
+}
