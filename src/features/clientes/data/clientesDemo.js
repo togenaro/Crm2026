@@ -61,6 +61,22 @@ export const clientesDemo = [
   },
 ];
 
+export const clientesDisponiblesDemo = [
+  ...clientesDemo,
+  {
+    id: '6',
+    nombre: 'Diego Fernández',
+    cuit: '25-56789012-3',
+    telefono: '381-555-0505',
+    email: 'diego.fernandez@email.com',
+    estado: 'No interesado',
+    asesor: 'María González',
+    proximoContacto: '',
+    fechaActualizacion: '2026-09-05',
+    vencido: false,
+  },
+];
+
 export const resumenClientesDemo = {
   totalClientes: 6,
   cantidadProspectos: 1,

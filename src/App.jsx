@@ -1,15 +1,15 @@
 import Sidebar from './components/layout/Sidebar';
 import Topbar from './components/layout/Topbar';
-import ClientesPage from './features/clientes/pages/ClientesPage';
+import GestionesPage from './features/gestiones/pages/GestionesPage';
 
 export default function App() {
   return (
     <div className="app-shell">
-      <Sidebar activeItem="Clientes" />
+      <Sidebar activeItem="Gestiones" />
       <div className="main-area">
         <Topbar />
         <main className="content-wrapper">
-          <ClientesPage />
+          <GestionesPage />
         </main>
       </div>
     </div>

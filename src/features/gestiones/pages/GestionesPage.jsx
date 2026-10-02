@@ -1,14 +1,19 @@
+import { useState } from 'react';
 import {
   IconArrowUpDown,
   IconCalendar,
   IconSearch,
 } from '../../../components/ui/Icons';
 import GestionCard from '../components/GestionCard';
+import GestionModal from '../components/GestionModal';
+import { clientesDisponiblesDemo } from '../../clientes/data/clientesDemo';
 import { gestionesDemo, totalGestionesDemo } from '../data/gestionesDemo';
 
 const tiposContacto = ['Llamada', 'WhatsApp', 'Correo', 'Reunión', 'Otro'];
 
 export default function GestionesPage() {
+  const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
+
   return (
     <div className="gestiones-view">
       <header className="page-header">
@@ -46,7 +51,7 @@ export default function GestionesPage() {
             <button className="btn btn-outline btn-sm" type="button">
               <IconArrowUpDown /> Recientes
             </button>
-            <button className="btn btn-primary btn-sm" type="button">
+            <button className="btn btn-primary btn-sm" type="button" onClick={() => setMostrarModalGestion(true)}>
               Nueva gestión
             </button>
           </div>
@@ -69,6 +74,9 @@ export default function GestionesPage() {
           </div>
         </footer>
       </section>
+      {mostrarModalGestion && (
+        <GestionModal clientes={clientesDisponiblesDemo} onClose={() => setMostrarModalGestion(false)} />
+      )}
     </div>
   );
 }
