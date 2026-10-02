@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   IconAlertTriangle,
   IconCalendar,
@@ -32,6 +32,7 @@ function statusClass(status) {
 }
 
 export default function ClientesTable({ clientes, totalClientes }) {
+  const navigate = useNavigate();
   const [mostrarModal, setMostrarModal] = useState(false);
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
   const [clienteAEditar, setClienteAEditar] = useState(null);
@@ -127,13 +128,23 @@ export default function ClientesTable({ clientes, totalClientes }) {
           </thead>
           <tbody>
             {clientes.map(cliente => (
-              <tr key={cliente.id} className={seleccionados.has(cliente.id) ? 'selected' : ''}>
+              <tr
+                key={cliente.id}
+                className={seleccionados.has(cliente.id) ? 'selected' : ''}
+                tabIndex={0}
+                aria-label={`Abrir ficha de ${cliente.nombre}`}
+                onClick={event => {
+                  if (event.target.closest('input[type="checkbox"]')) return;
+                  navigate(`/clientes/${cliente.id}`);
+                }}
+                onKeyDown={event => {
+                  if (event.target === event.currentTarget && event.key === 'Enter') {
+                    navigate(`/clientes/${cliente.id}`);
+                  }
+                }}
+              >
                 <td className="td-check"><input className="crm-checkbox" type="checkbox" aria-label={`Seleccionar ${cliente.nombre}`} checked={seleccionados.has(cliente.id)} onChange={() => alternarSeleccion(cliente.id)} /></td>
-                <td>
-                  <Link className="td-name td-name-link" to={`/clientes/${cliente.id}`}>
-                    <span className="td-avatar">{initials(cliente.nombre)}</span>{cliente.nombre}
-                  </Link>
-                </td>
+                <td><div className="td-name"><span className="td-avatar">{initials(cliente.nombre)}</span>{cliente.nombre}</div></td>
                 <td className="td-mono">{cliente.cuit}</td>
                 <td className="cell-secondary cell-nowrap">{cliente.telefono}</td>
                 <td className="cell-secondary cell-nowrap">{cliente.email || '—'}</td>

@@ -948,6 +948,15 @@ button {
   background: var(--bg-row-hover);
 }
 
+.crm-table tbody tr[tabindex="0"] {
+  cursor: pointer;
+}
+
+.crm-table tbody tr[tabindex="0"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 .crm-table tbody tr.selected {
   background: var(--bg-row-selected);
 }
@@ -987,15 +996,6 @@ button {
   align-items: center;
   gap: 10px;
   font-weight: 500;
-}
-
-.td-name-link {
-  color: inherit;
-  text-decoration: none;
-}
-
-.td-name-link:hover {
-  text-decoration: underline;
 }
 
 .td-avatar {
