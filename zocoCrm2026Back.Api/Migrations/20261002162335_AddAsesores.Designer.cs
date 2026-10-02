@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using zocoCrm2026Back.Data;
 
@@ -11,9 +12,11 @@ using zocoCrm2026Back.Data;
 namespace zocoCrm2026Back.Api.Migrations
 {
     [DbContext(typeof(ZocoCrmContext))]
-    partial class ZocoCrmContextModelSnapshot : ModelSnapshot
+    [Migration("20261002162335_AddAsesores")]
+    partial class AddAsesores
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

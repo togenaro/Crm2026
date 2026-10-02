@@ -12,9 +12,19 @@ public class ZocoCrmContext : DbContext
 
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<Gestion> Gestiones => Set<Gestion>();
+    public DbSet<Asesor> Asesores => Set<Asesor>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Asesor>(entity =>
+        {
+            entity.ToTable("Asesores");
+            entity.Property(asesor => asesor.Usuario).HasMaxLength(50).IsRequired();
+            entity.Property(asesor => asesor.Nombre).HasMaxLength(100).IsRequired();
+            entity.Property(asesor => asesor.PasswordHash).HasMaxLength(500).IsRequired();
+            entity.HasIndex(asesor => asesor.Usuario).IsUnique();
+        });
+
         modelBuilder.Entity<Cliente>(entity =>
         {
             entity.ToTable("Clientes");

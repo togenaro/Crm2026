@@ -58,6 +58,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddScoped<ClienteManagementService>();
 builder.Services.AddScoped<GestionManagementService>();
+builder.Services.AddScoped<AsesorManagementService>();
 builder.Services.AddScoped<DashboardService>();
 
 var app = builder.Build();
@@ -65,6 +66,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ZocoCrmContext>();
+    context.Seedwork<Asesor>("Sources/asesores.json");
     context.Seedwork<Cliente>("Sources/clientes.json");
     context.Seedwork<Gestion>("Sources/gestiones.json");
 }

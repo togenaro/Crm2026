@@ -98,8 +98,9 @@ public class ClienteManagementService
     public async Task<ClienteModel.ClienteResponse> AddCliente(
         ClienteModel.ClienteRequest request)
     {
+        var asesor = await ValidateAsesor(request.Asesor);
         ValidateRequest(request.Nombre, request.Cuit, request.Email,
-            request.Estado, request.Asesor);
+            request.Estado, asesor);
         
         var exist = await _repository.First<Cliente>(
             c => c.Cuit == request.Cuit);
@@ -115,7 +116,7 @@ public class ClienteManagementService
             Telefono = request.Telefono,
             Email = request.Email,
             Estado = request.Estado,
-            Asesor = request.Asesor,
+            Asesor = asesor,
             IsActive = true
         };
 
@@ -138,8 +139,9 @@ public class ClienteManagementService
         Guid id,
         ClienteModel.ClienteUpdate update)
     {
+        var asesor = await ValidateAsesor(update.Asesor);
         ValidateRequest(update.Nombre, update.Cuit, update.Email,
-            update.Estado, update.Asesor);
+            update.Estado, asesor);
 
         var cliente = await _repository.GetById<Cliente>(id);
         if (cliente == null || !cliente.IsActive)
@@ -157,7 +159,7 @@ public class ClienteManagementService
         cliente.Telefono = update.Telefono;
         cliente.Email = update.Email;
         cliente.Estado = update.Estado;
-        cliente.Asesor = update.Asesor;
+        cliente.Asesor = asesor;
         cliente.FechaActualizacion = DateTime.UtcNow;
 
         await _repository.Update(cliente);
@@ -214,5 +216,25 @@ public class ClienteManagementService
 
         if (errores.Any())
             throw new ValidationException(errores);
+    }
+
+    private async Task<string> ValidateAsesor(string? asesor)
+    {
+        if (string.IsNullOrWhiteSpace(asesor) || asesor.Trim().Length < 2 || asesor.Trim().Length > 100)
+            throw new ValidationException(new List<string>
+            {
+                "El asesor es obligatorio y debe tener entre 2 y 100 caracteres."
+            });
+
+        var registrado = await _repository.First<Asesor>(
+            item => item.Nombre.ToLower() == asesor.Trim().ToLower());
+
+        if (registrado == null)
+            throw new ValidationException(new List<string>
+            {
+                $"El asesor '{asesor.Trim()}' no está registrado."
+            });
+
+        return registrado.Nombre;
     }
 }
