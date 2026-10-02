@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { NavLink } from 'react-router-dom';
 
 function MenuIcon() {
   return (
@@ -36,21 +37,18 @@ function LogoutIcon() {
   );
 }
 
-function SidebarItem({ label, children, active }) {
+function SidebarItem({ label, children, to }) {
+  const className = ({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`;
+
   return (
-    <button
-      className={`sidebar-nav-item${active ? ' active' : ''}`}
-      type="button"
-      title={label}
-      aria-label={label}
-    >
+    <NavLink className={className} to={to} end title={label} aria-label={label}>
       {children}
       <span className="nav-label">{label}</span>
-    </button>
+    </NavLink>
   );
 }
 
-export default function Sidebar({ activeItem = 'Clientes' }) {
+export default function Sidebar() {
   const [expandido, setExpandido] = useState(false);
 
   return (
@@ -67,18 +65,19 @@ export default function Sidebar({ activeItem = 'Clientes' }) {
       </button>
 
       <nav className="sidebar-nav">
-        <SidebarItem label="Clientes" active={activeItem === 'Clientes'}>
+        <SidebarItem label="Clientes" to="/clientes">
           <UsersIcon />
         </SidebarItem>
-        <SidebarItem label="Gestiones" active={activeItem === 'Gestiones'}>
+        <SidebarItem label="Gestiones" to="/gestiones">
           <CalendarIcon />
         </SidebarItem>
       </nav>
 
       <div className="sidebar-bottom">
-        <SidebarItem label="Cerrar sesión">
+        <button className="sidebar-nav-item" type="button" title="Cerrar sesión" aria-label="Cerrar sesión">
           <LogoutIcon />
-        </SidebarItem>
+          <span className="nav-label">Cerrar sesión</span>
+        </button>
       </div>
     </aside>
   );
