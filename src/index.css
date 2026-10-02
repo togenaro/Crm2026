@@ -29,6 +29,8 @@
   --bg-table-header: #f9fafb;
   --bg-row-hover: #fafafa;
   --bg-row-selected: #fff7ed;
+  --sidebar-width: 56px;
+  --sidebar-expanded: 220px;
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --radius: 6px;
   --radius-md: 8px;
@@ -62,7 +64,7 @@ button {
 .sidebar {
   z-index: 1;
   display: flex;
-  width: 56px;
+  width: var(--sidebar-width);
   height: 100vh;
   flex: 0 0 56px;
   flex-direction: column;
@@ -70,6 +72,13 @@ button {
   overflow: hidden;
   background: #fff;
   border-right: 1px solid var(--border);
+  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1), flex-basis 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.expanded {
+  width: var(--sidebar-expanded);
+  flex-basis: var(--sidebar-expanded);
+  align-items: stretch;
 }
 
 .sidebar-hamburger {
@@ -83,6 +92,16 @@ button {
   background: transparent;
   border: 0;
   border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+
+.sidebar-hamburger:hover {
+  background: var(--bg-app);
+}
+
+.sidebar.expanded .sidebar-hamburger {
+  justify-content: flex-start;
+  padding: 0 14px;
 }
 
 .sidebar-hamburger svg,
@@ -132,6 +151,22 @@ button {
   background: var(--accent-light);
 }
 
+.sidebar:not(.expanded) .sidebar-nav {
+  align-items: center;
+}
+
+.sidebar.expanded .sidebar-nav {
+  align-items: stretch;
+  padding: 12px 8px;
+}
+
+.sidebar.expanded .sidebar-nav-item {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 0 10px;
+}
+
 .nav-label {
   position: absolute;
   width: 1px;
@@ -140,6 +175,23 @@ button {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   clip-path: inset(50%);
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  max-width: 0;
+  transition: opacity 0.18s, max-width 0.22s;
+  pointer-events: none;
+}
+
+.sidebar.expanded .nav-label {
+  position: static;
+  width: auto;
+  height: auto;
+  max-width: 160px;
+  overflow: hidden;
+  clip: auto;
+  clip-path: none;
+  opacity: 1;
 }
 
 .sidebar-bottom {
@@ -149,6 +201,18 @@ button {
   align-items: center;
   padding: 12px 0;
   border-top: 1px solid var(--border);
+}
+
+.sidebar.expanded .sidebar-bottom {
+  align-items: stretch;
+  padding: 12px 8px;
+}
+
+.sidebar.expanded .sidebar-bottom .sidebar-nav-item {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 0 10px;
 }
 
 .main-area {

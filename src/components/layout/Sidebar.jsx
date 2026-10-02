@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 function MenuIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -49,9 +51,18 @@ function SidebarItem({ label, children, active }) {
 }
 
 export default function Sidebar({ activeItem = 'Clientes' }) {
+  const [expandido, setExpandido] = useState(false);
+
   return (
-    <aside className="sidebar" aria-label="Navegación principal">
-      <button className="sidebar-hamburger" type="button" aria-label="Menú">
+    <aside className={`sidebar${expandido ? ' expanded' : ''}`} aria-label="Navegación principal">
+      <button
+        className="sidebar-hamburger"
+        type="button"
+        aria-label={expandido ? 'Contraer menú' : 'Expandir menú'}
+        aria-expanded={expandido}
+        title={expandido ? 'Contraer menú' : 'Expandir menú'}
+        onClick={() => setExpandido(actual => !actual)}
+      >
         <MenuIcon />
       </button>
 
