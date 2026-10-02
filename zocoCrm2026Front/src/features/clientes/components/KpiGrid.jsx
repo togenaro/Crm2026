@@ -1,0 +1,45 @@
+import KpiCard from '../../../components/ui/KpiCard';
+import { IconUsers, IconTrendingUp, IconAlertTriangle, IconBarChart } from '../../../components/ui/Icons';
+
+export default function KpiGrid({ resumen = null }) {
+  const total = resumen?.totalClientes ?? '—';
+  const prospectos = resumen?.cantidadProspectos ?? '—';
+  const interesados = resumen?.cantidadInteresados ?? '—';
+  const vencidos = resumen?.seguimientosVencidos ?? '—';
+
+  const cards = [
+    {
+      label: 'Total Clientes',
+      icon: <IconUsers />,
+      value: total,
+      sub: 'en el sistema',
+    },
+    {
+      label: 'Prospectos',
+      icon: <IconBarChart />,
+      value: prospectos,
+      sub: resumen ? `${total ? Math.round((prospectos / total) * 100) : 0}% del total` : '—',
+    },
+    {
+      label: 'Interesados',
+      icon: <IconTrendingUp />,
+      value: interesados,
+      sub: 'oportunidades activas',
+    },
+    {
+      label: 'Seguimientos vencidos',
+      icon: <IconAlertTriangle />,
+      value: vencidos,
+      sub: resumen ? (vencidos > 0 ? 'requieren atención' : 'sin vencidos') : '—',
+      subClass: resumen && vencidos > 0 ? 'danger' : '',
+    },
+  ];
+
+  return (
+    <div className="kpi-grid">
+      {cards.map((card) => (
+        <KpiCard key={card.label} {...card} />
+      ))}
+    </div>
+  );
+}
