@@ -1,4 +1,5 @@
 import { IconCalendar } from '../../../components/ui/Icons';
+import { Link } from 'react-router-dom';
 
 function formatDate(date) {
   if (!date) return '—';
@@ -35,7 +36,7 @@ function statusClass(status) {
   return classes[status] || 'badge-prospecto';
 }
 
-export default function GestionCard({ gestion, showCliente = true }) {
+export default function GestionCard({ gestion, showCliente = true, clienteId }) {
   return (
     <article className="gestion-card">
       <header className="gestion-card-header">
@@ -47,7 +48,13 @@ export default function GestionCard({ gestion, showCliente = true }) {
 
       {showCliente && (
         <div className="gestion-card-cliente">
-          <strong>{gestion.clienteNombre}</strong>
+          <strong>
+            {clienteId ? (
+              <Link className="gestion-card-cliente-link" to={`/clientes/${clienteId}`} state={{ from: '/gestiones' }}>
+                {gestion.clienteNombre}
+              </Link>
+            ) : gestion.clienteNombre}
+          </strong>
           <span>CUIT {gestion.clienteCuit}</span>
         </div>
       )}

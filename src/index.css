@@ -1184,6 +1184,15 @@ button {
   font-weight: 400;
 }
 
+.gestion-card-cliente-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.gestion-card-cliente-link:hover {
+  text-decoration: underline;
+}
+
 .gestion-card-body p {
   color: var(--text-primary);
   font-size: 14px;

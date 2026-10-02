@@ -58,9 +58,13 @@ export default function GestionesPage() {
         </div>
 
         <div className="full-history-list">
-          {gestionesDemo.map(gestion => (
-            <GestionCard key={gestion.id} gestion={gestion} />
-          ))}
+          {gestionesDemo.map(gestion => {
+            const cliente = clientesDisponiblesDemo.find(item => item.cuit === gestion.clienteCuit);
+
+            return (
+              <GestionCard key={gestion.id} gestion={gestion} clienteId={cliente?.id} />
+            );
+          })}
         </div>
 
         <footer className="pagination-bar">

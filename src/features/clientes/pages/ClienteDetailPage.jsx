@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 import {
   IconAlertTriangle,
   IconArrowUpDown,
@@ -39,9 +39,11 @@ function statusClass(status) {
 
 export default function ClienteDetailPage() {
   const { clienteId } = useParams();
+  const location = useLocation();
   const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
   const [mostrarModalCliente, setMostrarModalCliente] = useState(false);
   const clienteListado = clientesDemo.find(cliente => cliente.id === clienteId);
+  const volverAGestiones = location.state?.from === '/gestiones';
 
   if (!clienteListado) return <Navigate to="/clientes" replace />;
 
@@ -67,7 +69,9 @@ export default function ClienteDetailPage() {
           <div className="detail-subtitle detail-contact"><IconMail /> {cliente.email || '—'}</div>
           <div className="detail-subtitle detail-contact"><IconPhone /> {cliente.telefono}</div>
         </div>
-        <Link className="btn-back-discrete" to="/clientes">← Volver a Clientes</Link>
+        <Link className="btn-back-discrete" to={volverAGestiones ? '/gestiones' : '/clientes'}>
+          ← Volver a {volverAGestiones ? 'Gestiones' : 'Clientes'}
+        </Link>
       </header>
 
       <section className="full-view-meta-card" aria-label="Datos actuales del cliente">
