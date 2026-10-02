@@ -10,4 +10,10 @@
       <ProjectReference Include="..\zocoCrm2026Back.Domain\zocoCrm2026Back.Domain.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Include="Sources\*.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
 </Project>

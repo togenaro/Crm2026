@@ -1,0 +1,62 @@
+[
+  {
+    "id": "11111111-1111-1111-1111-111111111111",
+    "clienteId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "tipoContacto": "Llamada",
+    "comentario": "Llamada inicial, mostró interés en el producto",
+    "estadoResultante": "Contactado",
+    "fechaGestion": "2026-09-01T08:30:00Z",
+    "proximoContacto": "2026-10-05T10:00:00Z",
+    "asesor": "María González"
+  },
+  {
+    "id": "22222222-2222-2222-2222-222222222222",
+    "clienteId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "tipoContacto": "WhatsApp",
+    "comentario": "WhatsApp con detalles de precios y condiciones",
+    "estadoResultante": "Interesado",
+    "fechaGestion": "2026-09-15T14:00:00Z",
+    "proximoContacto": "2026-10-08T10:00:00Z",
+    "asesor": "María González"
+  },
+  {
+    "id": "33333333-3333-3333-3333-333333333333",
+    "clienteId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "tipoContacto": "Reunion",
+    "comentario": "Reunión presencial para presentar el servicio",
+    "estadoResultante": "Interesado",
+    "fechaGestion": "2026-09-20T15:30:00Z",
+    "proximoContacto": "2026-10-12T10:00:00Z",
+    "asesor": "María González"
+  },
+  {
+    "id": "44444444-4444-4444-4444-444444444444",
+    "clienteId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "tipoContacto": "Correo",
+    "comentario": "Envío de propuesta comercial por correo",
+    "estadoResultante": "Interesado",
+    "fechaGestion": "2026-09-22T09:00:00Z",
+    "proximoContacto": "2026-10-15T10:00:00Z",
+    "asesor": "Carlos Ruiz"
+  },
+  {
+    "id": "55555555-5555-5555-5555-555555555555",
+    "clienteId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "tipoContacto": "Otro",
+    "comentario": "Seguimiento de consulta sobre el producto",
+    "estadoResultante": "Contactado",
+    "fechaGestion": "2026-09-25T11:15:00Z",
+    "proximoContacto": null,
+    "asesor": "Carlos Ruiz"
+  },
+  {
+    "id": "66666666-6666-6666-6666-666666666666",
+    "clienteId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "tipoContacto": "Llamada",
+    "comentario": "Llamada para coordinar próximo contacto",
+    "estadoResultante": "Interesado",
+    "fechaGestion": "2026-09-28T16:00:00Z",
+    "proximoContacto": "2026-10-20T10:00:00Z",
+    "asesor": "María González"
+  }
+]
