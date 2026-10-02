@@ -41,7 +41,7 @@ function SidebarItem({ label, children, to }) {
   const className = ({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`;
 
   return (
-    <NavLink className={className} to={to} end title={label} aria-label={label}>
+    <NavLink className={className} to={to} title={label} aria-label={label}>
       {children}
       <span className="nav-label">{label}</span>
     </NavLink>

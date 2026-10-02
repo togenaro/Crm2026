@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import {
   IconAlertTriangle,
   IconArrowUpDown,
@@ -13,8 +14,10 @@ import {
 } from '../../../components/ui/Icons';
 import GestionCard from '../../gestiones/components/GestionCard';
 import GestionModal from '../../gestiones/components/GestionModal';
+import { gestionesDemo } from '../../gestiones/data/gestionesDemo';
 import ClienteModal from '../components/ClienteModal';
 import { clienteDetalleDemo } from '../data/clienteDetalleDemo';
+import { clientesDemo } from '../data/clientesDemo';
 
 function formatDate(date) {
   if (!date) return '—';
@@ -35,9 +38,19 @@ function statusClass(status) {
 }
 
 export default function ClienteDetailPage() {
+  const { clienteId } = useParams();
   const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
   const [mostrarModalCliente, setMostrarModalCliente] = useState(false);
-  const cliente = clienteDetalleDemo;
+  const clienteListado = clientesDemo.find(cliente => cliente.id === clienteId);
+
+  if (!clienteListado) return <Navigate to="/clientes" replace />;
+
+  const cliente = clienteListado.id === clienteDetalleDemo.id
+    ? { ...clienteListado, ...clienteDetalleDemo }
+    : {
+      ...clienteListado,
+      gestiones: gestionesDemo.filter(gestion => gestion.clienteCuit === clienteListado.cuit),
+    };
   const vencido = cliente.proximoContacto < '2026-10-02';
 
   return (
@@ -54,7 +67,7 @@ export default function ClienteDetailPage() {
           <div className="detail-subtitle detail-contact"><IconMail /> {cliente.email || '—'}</div>
           <div className="detail-subtitle detail-contact"><IconPhone /> {cliente.telefono}</div>
         </div>
-        <button className="btn-back-discrete" type="button">← Volver a Clientes</button>
+        <Link className="btn-back-discrete" to="/clientes">← Volver a Clientes</Link>
       </header>
 
       <section className="full-view-meta-card" aria-label="Datos actuales del cliente">

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   IconAlertTriangle,
   IconCalendar,
@@ -128,7 +129,11 @@ export default function ClientesTable({ clientes, totalClientes }) {
             {clientes.map(cliente => (
               <tr key={cliente.id} className={seleccionados.has(cliente.id) ? 'selected' : ''}>
                 <td className="td-check"><input className="crm-checkbox" type="checkbox" aria-label={`Seleccionar ${cliente.nombre}`} checked={seleccionados.has(cliente.id)} onChange={() => alternarSeleccion(cliente.id)} /></td>
-                <td><div className="td-name"><span className="td-avatar">{initials(cliente.nombre)}</span>{cliente.nombre}</div></td>
+                <td>
+                  <Link className="td-name td-name-link" to={`/clientes/${cliente.id}`}>
+                    <span className="td-avatar">{initials(cliente.nombre)}</span>{cliente.nombre}
+                  </Link>
+                </td>
                 <td className="td-mono">{cliente.cuit}</td>
                 <td className="cell-secondary cell-nowrap">{cliente.telefono}</td>
                 <td className="cell-secondary cell-nowrap">{cliente.email || '—'}</td>
