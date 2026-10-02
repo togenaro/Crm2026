@@ -10,6 +10,9 @@ import {
 } from '../../../components/ui/Icons';
 import Modal from '../../../components/ui/Modal';
 import ClienteModal from './ClienteModal';
+import EmptyState from '../../../components/ui/EmptyState';
+import Pagination from '../../../components/ui/Pagination';
+import ApiErrorList from '../../../components/ui/ApiErrorList';
 
 function formatDate(date) {
   if (!date) return '—';
@@ -46,13 +49,13 @@ export default function ClientesTable({
   pagina,
   totalPaginas,
   onPaginaChange,
-  numeroInicial,
-  numeroFinal,
   sortBy,
   sortDir,
   onOrdenar,
   onGuardarCliente,
   onEliminarClientes,
+  cargando,
+  loadError,
 }) {
   const navigate = useNavigate();
   const [mostrarModal, setMostrarModal] = useState(false);
@@ -99,7 +102,9 @@ export default function ClientesTable({
             <>
               <IconUsers />
               <span>
-                Total Clientes: <strong>{totalClientes} {totalClientes === 1 ? 'cliente' : 'clientes'}</strong>
+                {loadError || (cargando
+                  ? 'Cargando clientes…'
+                  : <>Total Clientes: <strong>{totalClientes} {totalClientes === 1 ? 'cliente' : 'clientes'}</strong></>)}
                 {(busqueda.trim() || estado || asesor) && <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}> (filtrado)</span>}
               </span>
             </>
@@ -198,9 +203,15 @@ export default function ClientesTable({
             </tr>
           </thead>
           <tbody>
-            {clientes.length === 0 ? (
+            {loadError || cargando || clientes.length === 0 ? (
               <tr>
-                <td className="crm-empty-row" colSpan="9">No se encontraron clientes con esos criterios.</td>
+                <td colSpan={9}>
+                  <EmptyState
+                    icon={!cargando ? IconUsers : null}
+                    message={loadError || (cargando ? 'Cargando clientes…' : 'No se encontraron clientes.')}
+                    isError={Boolean(loadError)}
+                  />
+                </td>
               </tr>
             ) : clientes.map(cliente => (
               <tr
@@ -238,40 +249,15 @@ export default function ClientesTable({
         </table>
       </div>
 
-      <footer className="pagination-bar">
-        <span className="pagination-info">
-          {totalClientes === 0 ? 'No hay resultados' : `Mostrando ${numeroInicial}–${numeroFinal} de ${totalClientes}`}
-        </span>
-        <div className="pagination-controls">
-          <button
-            className="page-btn"
-            type="button"
-            disabled={pagina === 1}
-            onClick={() => onPaginaChange(actual => Math.max(1, actual - 1))}
-          >
-            ‹ Anterior
-          </button>
-          {Array.from({ length: totalPaginas }, (_, indice) => indice + 1).map(numero => (
-            <button
-              key={numero}
-              className={`page-btn${pagina === numero ? ' active' : ''}`}
-              type="button"
-              aria-current={pagina === numero ? 'page' : undefined}
-              onClick={() => onPaginaChange(numero)}
-            >
-              {numero}
-            </button>
-          ))}
-          <button
-            className="page-btn"
-            type="button"
-            disabled={pagina === totalPaginas}
-            onClick={() => onPaginaChange(actual => Math.min(totalPaginas, actual + 1))}
-          >
-            Siguiente ›
-          </button>
-        </div>
-      </footer>
+      {!loadError && !cargando && (
+        <Pagination
+          page={pagina}
+          totalPages={totalPaginas}
+          totalItems={totalClientes}
+          pageSize={5}
+          onPageChange={onPaginaChange}
+        />
+      )}
       {mostrarModal && <ClienteModal onGuardar={datos => onGuardarCliente(datos)} onClose={() => setMostrarModal(false)} />}
       {clienteAEditar && <ClienteModal initial={clienteAEditar} onGuardar={datos => onGuardarCliente(datos, clienteAEditar.id)} onClose={() => setClienteAEditar(null)} />}
       {mostrarConfirmacion && (
@@ -280,7 +266,7 @@ export default function ClientesTable({
             <p className="delete-confirmation-message">
               Se archivarán {cantidadSeleccionada} cliente(s) junto con su historial de gestiones. Esta acción no se puede deshacer.
             </p>
-            {errorEliminacion && <p className="api-error" role="alert">{errorEliminacion}</p>}
+            <ApiErrorList errors={errorEliminacion ? [errorEliminacion] : []} />
             <div className="modal-form-actions">
               <button className="btn btn-outline" type="button" onClick={() => setMostrarConfirmacion(false)}>Cancelar</button>
               <button className="btn btn-danger" type="button" disabled={eliminando} onClick={async () => {

@@ -4,7 +4,7 @@ import ClientesTable from '../components/ClientesTable';
 
 const TAMANO_PAGINA = 5;
 
-export default function ClientesPage({ clientes, cargando, onGuardarCliente, onEliminarClientes }) {
+export default function ClientesPage({ clientes, resumen, cargando, loadError, onGuardarCliente, onEliminarClientes }) {
   const [busqueda, setBusqueda] = useState('');
   const [estado, setEstado] = useState('');
   const [asesor, setAsesor] = useState('');
@@ -50,16 +50,6 @@ export default function ClientesPage({ clientes, cargando, onGuardarCliente, onE
   const totalPaginas = Math.max(1, Math.ceil(clientesOrdenados.length / TAMANO_PAGINA));
   const indiceInicial = (pagina - 1) * TAMANO_PAGINA;
   const clientesVisibles = clientesOrdenados.slice(indiceInicial, indiceInicial + TAMANO_PAGINA);
-  const numeroInicial = clientesOrdenados.length === 0 ? 0 : indiceInicial + 1;
-  const numeroFinal = Math.min(indiceInicial + TAMANO_PAGINA, clientesOrdenados.length);
-  const hoy = new Date().toISOString().slice(0, 10);
-  const resumen = {
-    totalClientes: clientes.length,
-    cantidadProspectos: clientes.filter(cliente => cliente.estado === 'Prospecto').length,
-    cantidadInteresados: clientes.filter(cliente => cliente.estado === 'Interesado').length,
-    seguimientosVencidos: clientes.filter(cliente => cliente.proximoContacto && cliente.proximoContacto < hoy).length,
-  };
-
   return (
     <>
       <header className="page-header">
@@ -67,7 +57,6 @@ export default function ClientesPage({ clientes, cargando, onGuardarCliente, onE
       </header>
 
       <KpiGrid resumen={resumen} />
-      {cargando && <p className="pagination-info">Cargando clientes y gestiones…</p>}
       <ClientesTable
         clientes={clientesVisibles}
         todosLosClientes={clientes}
@@ -91,13 +80,13 @@ export default function ClientesPage({ clientes, cargando, onGuardarCliente, onE
         pagina={pagina}
         totalPaginas={totalPaginas}
         onPaginaChange={setPagina}
-        numeroInicial={numeroInicial}
-        numeroFinal={numeroFinal}
         sortBy={sortBy}
         sortDir={sortDir}
         onOrdenar={ordenarPor}
         onGuardarCliente={onGuardarCliente}
         onEliminarClientes={onEliminarClientes}
+        cargando={cargando}
+        loadError={loadError}
       />
     </>
   );

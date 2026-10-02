@@ -6,12 +6,15 @@ import {
 } from '../../../components/ui/Icons';
 import GestionCard from '../components/GestionCard';
 import GestionModal from '../components/GestionModal';
+import EmptyState from '../../../components/ui/EmptyState';
+import Pagination from '../../../components/ui/Pagination';
 
 const tiposContacto = ['Llamada', 'WhatsApp', 'Correo', 'Reunión', 'Otro'];
 const TAMANO_PAGINA = 5;
 
-export default function GestionesPage({ clientes, gestiones, cargando, onAgregarGestion }) {
+export default function GestionesPage({ clientes, gestiones, cargando, loadError, onAgregarGestion, onEditarGestion }) {
   const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
+  const [gestionAEditar, setGestionAEditar] = useState(null);
   const [busqueda, setBusqueda] = useState('');
   const [tipo, setTipo] = useState('');
   const [asesor, setAsesor] = useState('');
@@ -38,12 +41,9 @@ export default function GestionesPage({ clientes, gestiones, cargando, onAgregar
 
       return sortDir === 'desc' ? fechaSegunda - fechaPrimera : fechaPrimera - fechaSegunda;
     });
-  const hayFiltrosActivos = Boolean(terminoBusqueda || tipo || asesor);
   const totalPaginas = Math.max(1, Math.ceil(gestionesFiltradas.length / TAMANO_PAGINA));
   const indiceInicial = (pagina - 1) * TAMANO_PAGINA;
   const gestionesVisibles = gestionesFiltradas.slice(indiceInicial, indiceInicial + TAMANO_PAGINA);
-  const numeroInicial = gestionesFiltradas.length === 0 ? 0 : indiceInicial + 1;
-  const numeroFinal = Math.min(indiceInicial + TAMANO_PAGINA, gestionesFiltradas.length);
 
   return (
     <div className="gestiones-view">
@@ -56,7 +56,9 @@ export default function GestionesPage({ clientes, gestiones, cargando, onAgregar
           <div className="table-info-bar-left">
             <IconCalendar />
             <span>
-              Total Gestiones: <strong>{gestiones.length} gestiones</strong>
+              {loadError || (cargando
+                ? 'Cargando gestiones…'
+                : <>Total Gestiones: <strong>{gestionesFiltradas.length} {gestionesFiltradas.length === 1 ? 'gestión' : 'gestiones'}</strong></>)}
             </span>
           </div>
 
@@ -100,59 +102,61 @@ export default function GestionesPage({ clientes, gestiones, cargando, onAgregar
             >
               <IconArrowUpDown /> {sortDir === 'desc' ? 'Recientes' : 'Antiguas'}
             </button>
-            <button className="btn btn-primary btn-sm" type="button" onClick={() => setMostrarModalGestion(true)}>
+            <button className="btn btn-primary btn-sm" type="button" onClick={() => {
+              setGestionAEditar(null);
+              setMostrarModalGestion(true);
+            }}>
               Nueva gestión
             </button>
           </div>
         </div>
 
         <div className="full-history-list">
-          {cargando ? (
-            <p className="pagination-info">Cargando gestiones…</p>
-          ) : gestionesFiltradas.length === 0 ? (
-            <p className="pagination-info">No se encontraron gestiones con esos criterios.</p>
+          {loadError || cargando || gestionesFiltradas.length === 0 ? (
+            <EmptyState
+              icon={!cargando ? IconCalendar : null}
+              message={loadError || (cargando ? 'Cargando gestiones…' : 'No se encontraron gestiones.')}
+              isError={Boolean(loadError)}
+            />
           ) : gestionesVisibles.map(gestion => {
             const cliente = clientes.find(item => item.cuit === gestion.clienteCuit);
 
             return (
-              <GestionCard key={gestion.id} gestion={gestion} clienteId={cliente?.id} />
+              <GestionCard
+                key={gestion.id}
+                gestion={gestion}
+                clienteId={cliente?.id}
+                onClickGestion={seleccionada => {
+                  setGestionAEditar(seleccionada);
+                  setMostrarModalGestion(true);
+                }}
+              />
             );
           })}
         </div>
 
-        <footer className="pagination-bar">
-          <span className="pagination-info">
-            {gestionesFiltradas.length === 0
-              ? '0 resultados'
-              : `Mostrando ${numeroInicial}–${numeroFinal} de ${gestionesFiltradas.length}${hayFiltrosActivos ? ' resultados' : ''}`}
-          </span>
-          <div className="pagination-controls">
-            <button className="page-btn" type="button" disabled={pagina === 1} onClick={() => setPagina(actual => Math.max(1, actual - 1))}>
-              ‹ Anterior
-            </button>
-            {Array.from({ length: totalPaginas }, (_, indice) => indice + 1).map(numero => (
-              <button
-                key={numero}
-                className={`page-btn${pagina === numero ? ' active' : ''}`}
-                type="button"
-                aria-current={pagina === numero ? 'page' : undefined}
-                onClick={() => setPagina(numero)}
-              >
-                {numero}
-              </button>
-            ))}
-            <button className="page-btn" type="button" disabled={pagina === totalPaginas} onClick={() => setPagina(actual => Math.min(totalPaginas, actual + 1))}>
-              Siguiente ›
-            </button>
-          </div>
-        </footer>
+        {!loadError && !cargando && (
+          <Pagination
+            page={pagina}
+            totalPages={totalPaginas}
+            totalItems={gestionesFiltradas.length}
+            pageSize={TAMANO_PAGINA}
+            onPageChange={setPagina}
+          />
+        )}
       </section>
       {mostrarModalGestion && (
         <GestionModal
           clientes={clientes}
-          onClose={() => setMostrarModalGestion(false)}
+          editingGestion={gestionAEditar}
+          onClose={() => {
+            setGestionAEditar(null);
+            setMostrarModalGestion(false);
+          }}
           onGuardar={async datos => {
-            await onAgregarGestion(datos);
+            if (gestionAEditar) await onEditarGestion({ ...datos, gestionId: gestionAEditar.id });
+            else await onAgregarGestion(datos);
+            setGestionAEditar(null);
             setPagina(1);
             setMostrarModalGestion(false);
           }}

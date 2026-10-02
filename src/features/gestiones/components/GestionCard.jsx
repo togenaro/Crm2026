@@ -36,9 +36,21 @@ function statusClass(status) {
   return classes[status] || 'badge-prospecto';
 }
 
-export default function GestionCard({ gestion, showCliente = true, clienteId }) {
+export default function GestionCard({ gestion, showCliente = true, clienteId, onClickGestion }) {
   return (
-    <article className="gestion-card">
+    <article
+      className="gestion-card"
+      style={{ cursor: onClickGestion ? 'pointer' : 'default' }}
+      onClick={() => onClickGestion?.(gestion)}
+      onKeyDown={event => {
+        if (onClickGestion && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault();
+          onClickGestion(gestion);
+        }
+      }}
+      role={onClickGestion ? 'button' : undefined}
+      tabIndex={onClickGestion ? 0 : undefined}
+    >
       <header className="gestion-card-header">
         <span className="timeline-tipo">{gestion.tipoContacto}</span>
         <span className="gestion-card-date">
@@ -50,7 +62,7 @@ export default function GestionCard({ gestion, showCliente = true, clienteId }) 
         <div className="gestion-card-cliente">
           <strong>
             {clienteId ? (
-              <Link className="gestion-card-cliente-link" to={`/clientes/${clienteId}`} state={{ from: '/gestiones' }}>
+              <Link className="gestion-card-cliente-link" to={`/clientes/${clienteId}`} state={{ from: '/gestiones' }} onClick={event => event.stopPropagation()}>
                 {gestion.clienteNombre}
               </Link>
             ) : gestion.clienteNombre}

@@ -7,9 +7,10 @@ import {
 } from '../../../components/ui/Icons';
 
 export default function KpiGrid({ resumen }) {
-  const total = resumen.totalClientes;
-  const prospectos = resumen.cantidadProspectos;
-  const vencidos = resumen.seguimientosVencidos;
+  const total = resumen?.totalClientes ?? '—';
+  const prospectos = resumen?.cantidadProspectos ?? '—';
+  const interesados = resumen?.cantidadInteresados ?? '—';
+  const vencidos = resumen?.seguimientosVencidos ?? '—';
 
   const cards = [
     { label: 'Total Clientes', icon: <IconUsers />, value: total, sub: 'en el sistema' },
@@ -17,20 +18,20 @@ export default function KpiGrid({ resumen }) {
       label: 'Prospectos',
       icon: <IconBarChart />,
       value: prospectos,
-      sub: `${Math.round((prospectos / total) * 100)}% del total`,
+      sub: resumen ? `${total ? Math.round((prospectos / total) * 100) : 0}% del total` : '—',
     },
     {
       label: 'Interesados',
       icon: <IconTrendingUp />,
-      value: resumen.cantidadInteresados,
+      value: interesados,
       sub: 'oportunidades activas',
     },
     {
       label: 'Seguimientos vencidos',
       icon: <IconAlertTriangle />,
       value: vencidos,
-      sub: vencidos > 0 ? 'requieren atención' : 'sin vencidos',
-      subClass: vencidos > 0 ? 'danger' : '',
+      sub: resumen ? (vencidos > 0 ? 'requieren atención' : 'sin vencidos') : '—',
+      subClass: resumen && vencidos > 0 ? 'danger' : '',
     },
   ];
 

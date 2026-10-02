@@ -53,3 +53,16 @@ export async function crearGestion(clienteId, datos) {
   });
   return gestionDesdeApi(gestion);
 }
+
+export async function actualizarGestion(clienteId, gestionId, datos) {
+  const fechaGestion = new Date(`${datos.fechaGestion}T${datos.horaGestion}:00`).toISOString();
+  const proximoContacto = datos.proximoContacto ? `${datos.proximoContacto}T12:00:00` : null;
+  const { data: gestion } = await axiosClient.put(`/clientes/${clienteId}/gestiones/${gestionId}`, {
+    tipoContacto: tipoParaApi(datos.tipoContacto),
+    comentario: datos.comentario,
+    estadoResultante: estadoParaApi(datos.estadoResultante),
+    fechaGestion,
+    proximoContacto,
+  });
+  return gestionDesdeApi(gestion);
+}
