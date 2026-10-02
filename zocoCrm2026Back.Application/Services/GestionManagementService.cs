@@ -147,14 +147,7 @@ public class GestionManagementService
 
         var cliente = await _repository.GetById<Cliente>(clienteId);
         if (cliente == null || !cliente.IsActive)
-        {
-            return new PagedResponse<GestionModel.GestionResponse>(
-                new List<GestionModel.GestionResponse>(),
-                0,
-                page,
-                pageSize,
-                0);
-        }
+            throw new KeyNotFoundException("Cliente no encontrado.");
 
         var gestiones = await _repository.GetFiltered<Gestion>(
             gestion => gestion.ClienteId == clienteId) ?? new List<Gestion>();
