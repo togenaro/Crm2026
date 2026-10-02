@@ -1,6 +1,8 @@
 using zocoCrm2026Back.Application.Services;
 using zocoCrm2026Back.Data;
+using zocoCrm2026Back.Data.Helpers;
 using zocoCrm2026Back.Api.Middlewares;
+using zocoCrm2026Back.Domain.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +23,13 @@ builder.Services.AddScoped<GestionManagementService>();
 builder.Services.AddScoped<DashboardService>();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ZocoCrmContext>();
+    context.Seedwork<Cliente>("Sources/clientes.json");
+    context.Seedwork<Gestion>("Sources/gestiones.json");
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
