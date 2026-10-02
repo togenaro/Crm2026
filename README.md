@@ -118,7 +118,7 @@ En el frontend, Screaming Architecture agrupa el código por funcionalidad (`aut
 
 ### Otras decisiones
 
-### Persistencia en memoria para los tests
+#### Persistencia en memoria para los tests
 
 Los tests unitarios usan el proveedor InMemory de EF Core (`UseInMemoryDatabase`
 con base nueva por test) en vez de SQL Server. Así las reglas de aplicación se
@@ -126,7 +126,7 @@ prueban rápido, aisladas y sin depender de Docker ni de una base compartida:
 cada test levanta su contexto, ejecuta el service real (`ClienteManagementService`,
 `GestionManagementService` con `EfRepository`) y lo descarta.
 
-### `InvalidModelStateResponseFactory` personalizado
+#### `InvalidModelStateResponseFactory` personalizado
 
 .NET genera un `400` automático cuando falla el binding (ej. una fecha
 malformada). Se personalizó en `Program.cs` vía `ApiBehaviorOptions` para que
@@ -135,7 +135,7 @@ comprensibles: `"La fecha ingresada no es válida."`,
 `"El valor ingresado en 'id' no es válido."`. Sin esto, el cliente recibiría el
 mensaje genérico en inglés del framework.
 
-### Middleware de manejo de excepciones
+#### Middleware de manejo de excepciones
 
 `ExceptionHandlingMiddleware` concentra en un solo lugar el mapa
 excepción → código HTTP (`ValidationException→400`, `DuplicatedEntityException→409`,
@@ -143,7 +143,7 @@ excepción → código HTTP (`ValidationException→400`, `DuplicatedEntityExcep
 (`{errores: [...]}` o `{error: ...}`). Los services lanzan excepciones de
 dominio y nunca conocen HTTP: si mañana cambia un código, se toca un archivo.
 
-### Validación centralizada por service (`ValidateRequest`)
+#### Validación centralizada por service (`ValidateRequest`)
 
 Cada service expone un único método privado de validación
 (`ClienteManagementService.ValidateRequest`,
@@ -155,66 +155,66 @@ contexto (en edición de gestiones se admite conservar la fecha ya
 guardada). Una sola fuente de verdad para lo que cada entidad considera
 válido.
 
-### Lista de errores en el backend
+#### Lista de errores en el backend
 
 Toda validación devuelve **la lista completa** de problemas, no solo el
 primero. `ValidationException` transporta `List<string>` y el middleware la
 serializa tal cual, igual que el factory del binding. El frontend puede mostrar
 todos los errores del formulario de una vez.
 
-### Seed cuando las tablas están vacías
+#### Seed cuando las tablas están vacías
 
 Al arrancar, `Program.cs` ejecuta `Seedwork<T>` solo si la tabla está vacía:
 carga 6 clientes y 11 gestiones desde `Sources/*.json` sin pisar datos
 existentes. Así cualquier persona que levanta el proyecto tiene datos con
 estados variados y vencidos para probar filtros, historial e indicadores.
 
-### Axios como cliente HTTP del frontend
+#### Axios como cliente HTTP del frontend
 
 Todo el tráfico sale por un `axiosClient` central (`baseURL` por
 `VITE_API_URL`, header JSON, interceptor de respuesta). Cada feature
 (`clientes`, `gestiones`) tiene su service que normaliza enums numéricos a
 texto legible. Un solo punto para cambiar la URL, agregar auth o loguear.
 
-### Paginación con envoltorio
+#### Paginación con envoltorio
 
 Toda lista devuelve `Items, TotalItems, Page, PageSize, TotalPages`. El
 frontend pagina sin adivinar totales y la API puede cambiar el tamaño por
 defecto (5) sin romperlo.
 
-### Búsqueda, filtro y orden en el servidor
+#### Búsqueda, filtro y orden en el servidor
 
 `GET /api/clientes` filtra en la base (`search` por nombre/CUIT/teléfono,
 `estado`, `asesor`) y ordena por `ProximoContacto` (nulos al final). La base
 filtra, el frontend muestra: con miles de clientes esto es lo que evita traer
 todo a memoria.
 
-### Baja lógica + DTOs por operación
+#### Baja lógica + DTOs por operación
 
 `DELETE` desactiva (`IsActive=false`) en vez de borrar: el historial de
 gestiones nunca se pierde. Y cada operación tiene su DTO
 (`ClienteRequest/ClienteUpdate/ClienteResponse`): la API nunca expone ni
 recibe entidades de dominio directamente.
 
-### Clean/N-capas en vez de minimal API
+#### Clean/N-capas en vez de minimal API
 
 Los controllers con `ControllerBase` dan orden, atributos de ruta claros y
 un lugar visible por recurso. Las reglas viven en `Application/Services` y
 los controllers solo reciben input y devuelven `IActionResult`.
 
-### CUIT con formato estricto
+#### CUIT con formato estricto
 
 Se valida `XX-XXXXXXXX-X` además de obligatoriedad y unicidad (en alta y en
 edición excluyendo el propio id). Protege la unicidad real y devuelve
 mensajes de error claros en vez de dejarlo a la base.
 
-### Enums como string en JSON
+#### Enums como string en JSON
 
 `JsonStringEnumConverter` hace que la API hable `"Prospecto"` en lugar de
 `0`. Legible para quien prueba en Swagger, y el frontend tolera ambas
 formas al normalizar.
 
-### Fechas siempre en UTC, con corrección horaria en el front
+#### Fechas siempre en UTC, con corrección horaria en el front
 
 El backend crea y compara todo en UTC (`DateTime.UtcNow` al nacer cada
 entidad y en cada comparación: vencido es `ProximoContacto < UtcNow`, la
@@ -228,7 +228,7 @@ forzar la interpretación UTC y formatea con
 `timeZone: America/Argentina/Buenos_Aires`. Sin esto, una gestión de las
 15:00 se mostraría a las 18:00.
 
-### Secretos fuera del repositorio
+#### Secretos fuera del repositorio
 
 `appsettings.json` no contiene ninguna connection string, solo logging. La
 API la lee de `ConnectionStrings:DefaultConnection` y cada entorno la
@@ -236,7 +236,7 @@ aporta por User Secrets (`dotnet user-secrets set...`, `UserSecretsId` ya
 configurado en el `.csproj`) o variable de entorno. El repositorio nunca
 contiene passwords y cada máquina usa sus propias credenciales.
 
-### `IRepository` genérico: los services no conocen EF
+#### `IRepository` genérico: los services no conocen EF
 
 `Application` define `IRepository` (`GetById, GetAll, First, GetFiltered,
 Add, Update, Delete, Query`) y `Data` lo implementa con `EfRepository`. Los
@@ -244,7 +244,7 @@ services programan contra la interfaz, nunca contra `DbContext`. Gracias a
 eso los tests unitarios reemplazan SQL Server por el proveedor InMemory
 sin tocar una línea de lógica: la regla se prueba, no el motor.
 
-### Borrado en lote desde el front
+#### Borrado en lote desde el front
 
 `clienteService.deleteClientes` acepta un id o un array y dispara los
 `DELETE` en paralelo con `Promise.all`. Del lado de la API esto funciona
@@ -252,13 +252,13 @@ porque el endpoint es idempotente por id: desactivar dos veces al mismo
 cliente devuelve el mismo `204`. Selección múltiple en la tabla sin
 endpoint especial.
 
-### Dashboard solo sobre activos
+#### Dashboard solo sobre activos
 
 `DashboardService` filtra `IsActive` antes de contar: totales, prospectos,
 interesados y vencidos ignoran a los dados de baja. Un cliente eliminado
 no infla indicadores ni aparece como vencido pendiente.
 
-### Trazabilidad por gestión sin login (`Gestion.Asesor`)
+#### Trazabilidad por gestión sin login (`Gestion.Asesor`)
 
 Cada gestión guarda su propio `Asesor`: quién la hizo. Si al crearla no se
 informa, hereda automáticamente el asesor del cliente
@@ -267,7 +267,7 @@ qué” sin necesidad de autenticación: el login del frontend es simulado y la
 auditoría viaja en el dato, no en la sesión. En `UpdateGestion` el asesor
 original se conserva, no se pisa.
 
-### `react-hook-form` para los formularios
+#### `react-hook-form` para los formularios
 
 Alta/edición de cliente, gestión y login usan `useForm` con `register`,
 `handleSubmit` y `formState.errors`: inputs no controlados (menos
