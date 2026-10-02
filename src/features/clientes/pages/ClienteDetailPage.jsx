@@ -15,10 +15,7 @@ import {
 } from '../../../components/ui/Icons';
 import GestionCard from '../../gestiones/components/GestionCard';
 import GestionModal from '../../gestiones/components/GestionModal';
-import { gestionesDemo } from '../../gestiones/data/gestionesDemo';
 import ClienteModal from '../components/ClienteModal';
-import { clienteDetalleDemo } from '../data/clienteDetalleDemo';
-import { clientesDemo } from '../data/clientesDemo';
 
 function formatDate(date) {
   if (!date) return '—';
@@ -38,30 +35,37 @@ function statusClass(status) {
   return classes[status] || 'badge-prospecto';
 }
 
-export default function ClienteDetailPage() {
+export default function ClienteDetailPage({ clientes, gestiones, onAgregarGestion }) {
   const { clienteId } = useParams();
   const location = useLocation();
   const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
   const [mostrarModalCliente, setMostrarModalCliente] = useState(false);
   const [busquedaGestiones, setBusquedaGestiones] = useState('');
-  const clienteListado = clientesDemo.find(cliente => cliente.id === clienteId);
+  const [sortDir, setSortDir] = useState('desc');
+  const clienteListado = clientes.find(cliente => String(cliente.id) === String(clienteId));
   const volverAGestiones = location.state?.from === '/gestiones';
 
   if (!clienteListado) return <Navigate to="/clientes" replace />;
 
-  const cliente = clienteListado.id === clienteDetalleDemo.id
-    ? { ...clienteListado, ...clienteDetalleDemo }
-    : {
-      ...clienteListado,
-      gestiones: gestionesDemo.filter(gestion => gestion.clienteCuit === clienteListado.cuit),
-    };
-  const vencido = cliente.proximoContacto < '2026-10-02';
+  const cliente = {
+    ...clienteListado,
+    gestiones: gestiones.filter(gestion => gestion.clienteCuit === clienteListado.cuit),
+  };
+  const hoy = new Date().toISOString().slice(0, 10);
+  const vencido = cliente.proximoContacto < hoy;
   const terminoBusquedaGestiones = busquedaGestiones.trim().toLocaleLowerCase('es');
-  const gestionesFiltradas = cliente.gestiones.filter(gestion => !terminoBusquedaGestiones || [
-    gestion.tipoContacto,
-    gestion.comentario,
-    gestion.asesor,
-  ].some(valor => valor?.toLocaleLowerCase('es').includes(terminoBusquedaGestiones)));
+  const gestionesFiltradas = cliente.gestiones
+    .filter(gestion => !terminoBusquedaGestiones || [
+      gestion.tipoContacto,
+      gestion.comentario,
+      gestion.asesor,
+    ].some(valor => valor?.toLocaleLowerCase('es').includes(terminoBusquedaGestiones)))
+    .sort((primera, segunda) => {
+      const fechaPrimera = new Date(primera.fechaGestion).getTime();
+      const fechaSegunda = new Date(segunda.fechaGestion).getTime();
+
+      return sortDir === 'desc' ? fechaSegunda - fechaPrimera : fechaPrimera - fechaSegunda;
+    });
 
   return (
     <div className="full-view-container">
@@ -124,8 +128,13 @@ export default function ClienteDetailPage() {
                 onChange={event => setBusquedaGestiones(event.target.value)}
               />
             </label>
-            <button className="btn btn-outline btn-sm" type="button" title="Cambiar orden por fecha">
-              <IconArrowUpDown /> Recientes
+            <button
+              className="btn btn-outline btn-sm"
+              type="button"
+              title="Cambiar orden por fecha"
+              onClick={() => setSortDir(actual => actual === 'desc' ? 'asc' : 'desc')}
+            >
+              <IconArrowUpDown /> {sortDir === 'desc' ? 'Recientes' : 'Antiguas'}
             </button>
             <button className="btn btn-primary btn-sm" type="button" onClick={() => setMostrarModalGestion(true)}>
               <IconPlus /> Nueva gestión
@@ -141,7 +150,14 @@ export default function ClienteDetailPage() {
         </div>
       </section>
       {mostrarModalGestion && (
-        <GestionModal cliente={cliente} onClose={() => setMostrarModalGestion(false)} />
+        <GestionModal
+          cliente={cliente}
+          onClose={() => setMostrarModalGestion(false)}
+          onGuardar={datos => {
+            onAgregarGestion(datos);
+            setMostrarModalGestion(false);
+          }}
+        />
       )}
       {mostrarModalCliente && (
         <ClienteModal initial={cliente} onClose={() => setMostrarModalCliente(false)} />

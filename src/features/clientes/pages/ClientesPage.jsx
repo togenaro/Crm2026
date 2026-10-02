@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import KpiGrid from '../components/KpiGrid';
 import ClientesTable from '../components/ClientesTable';
-import { clientesDisponiblesDemo, resumenClientesDemo } from '../data/clientesDemo';
 
 const TAMANO_PAGINA = 5;
 
-export default function ClientesPage() {
+export default function ClientesPage({ clientes }) {
   const [busqueda, setBusqueda] = useState('');
   const [estado, setEstado] = useState('');
   const [asesor, setAsesor] = useState('');
@@ -24,9 +23,9 @@ export default function ClientesPage() {
   }
 
   const terminoBusqueda = busqueda.trim().toLocaleLowerCase('es');
-  const asesores = [...new Set(clientesDisponiblesDemo.map(cliente => cliente.asesor).filter(Boolean))]
+  const asesores = [...new Set(clientes.map(cliente => cliente.asesor).filter(Boolean))]
     .sort((primero, segundo) => primero.localeCompare(segundo, 'es'));
-  const clientesFiltrados = clientesDisponiblesDemo.filter(cliente => {
+  const clientesFiltrados = clientes.filter(cliente => {
     const coincideBusqueda = !terminoBusqueda || [cliente.nombre, cliente.cuit, cliente.telefono]
       .some(valor => valor?.toLocaleLowerCase('es').includes(terminoBusqueda));
     const coincideEstado = !estado || cliente.estado === estado;
@@ -53,6 +52,13 @@ export default function ClientesPage() {
   const clientesVisibles = clientesOrdenados.slice(indiceInicial, indiceInicial + TAMANO_PAGINA);
   const numeroInicial = clientesOrdenados.length === 0 ? 0 : indiceInicial + 1;
   const numeroFinal = Math.min(indiceInicial + TAMANO_PAGINA, clientesOrdenados.length);
+  const hoy = new Date().toISOString().slice(0, 10);
+  const resumen = {
+    totalClientes: clientes.length,
+    cantidadProspectos: clientes.filter(cliente => cliente.estado === 'Prospecto').length,
+    cantidadInteresados: clientes.filter(cliente => cliente.estado === 'Interesado').length,
+    seguimientosVencidos: clientes.filter(cliente => cliente.proximoContacto && cliente.proximoContacto < hoy).length,
+  };
 
   return (
     <>
@@ -60,10 +66,10 @@ export default function ClientesPage() {
         <h1 className="page-title">Clientes</h1>
       </header>
 
-      <KpiGrid resumen={resumenClientesDemo} />
+      <KpiGrid resumen={resumen} />
       <ClientesTable
         clientes={clientesVisibles}
-        todosLosClientes={clientesDisponiblesDemo}
+        todosLosClientes={clientes}
         totalClientes={clientesFiltrados.length}
         busqueda={busqueda}
         onBusquedaChange={valor => {

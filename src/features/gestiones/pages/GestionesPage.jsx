@@ -6,13 +6,11 @@ import {
 } from '../../../components/ui/Icons';
 import GestionCard from '../components/GestionCard';
 import GestionModal from '../components/GestionModal';
-import { clientesDisponiblesDemo } from '../../clientes/data/clientesDemo';
-import { gestionesDemo, totalGestionesDemo } from '../data/gestionesDemo';
 
 const tiposContacto = ['Llamada', 'WhatsApp', 'Correo', 'Reunión', 'Otro'];
 const TAMANO_PAGINA = 5;
 
-export default function GestionesPage() {
+export default function GestionesPage({ clientes, gestiones, onAgregarGestion }) {
   const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [tipo, setTipo] = useState('');
@@ -20,9 +18,9 @@ export default function GestionesPage() {
   const [sortDir, setSortDir] = useState('desc');
   const [pagina, setPagina] = useState(1);
   const terminoBusqueda = busqueda.trim().toLocaleLowerCase('es');
-  const asesores = [...new Set(gestionesDemo.map(gestion => gestion.asesor).filter(Boolean))]
+  const asesores = [...new Set(gestiones.map(gestion => gestion.asesor).filter(Boolean))]
     .sort((primero, segundo) => primero.localeCompare(segundo, 'es'));
-  const gestionesFiltradas = gestionesDemo
+  const gestionesFiltradas = gestiones
     .filter(gestion => {
       const coincideBusqueda = !terminoBusqueda || [
         gestion.clienteNombre,
@@ -58,7 +56,7 @@ export default function GestionesPage() {
           <div className="table-info-bar-left">
             <IconCalendar />
             <span>
-              Total Gestiones: <strong>{totalGestionesDemo} gestiones</strong>
+              Total Gestiones: <strong>{gestiones.length} gestiones</strong>
             </span>
           </div>
 
@@ -112,7 +110,7 @@ export default function GestionesPage() {
           {gestionesFiltradas.length === 0 ? (
             <p className="pagination-info">No se encontraron gestiones con esos criterios.</p>
           ) : gestionesVisibles.map(gestion => {
-            const cliente = clientesDisponiblesDemo.find(item => item.cuit === gestion.clienteCuit);
+            const cliente = clientes.find(item => item.cuit === gestion.clienteCuit);
 
             return (
               <GestionCard key={gestion.id} gestion={gestion} clienteId={cliente?.id} />
@@ -148,7 +146,15 @@ export default function GestionesPage() {
         </footer>
       </section>
       {mostrarModalGestion && (
-        <GestionModal clientes={clientesDisponiblesDemo} onClose={() => setMostrarModalGestion(false)} />
+        <GestionModal
+          clientes={clientes}
+          onClose={() => setMostrarModalGestion(false)}
+          onGuardar={datos => {
+            onAgregarGestion(datos);
+            setPagina(1);
+            setMostrarModalGestion(false);
+          }}
+        />
       )}
     </div>
   );
