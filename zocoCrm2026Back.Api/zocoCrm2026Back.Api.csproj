@@ -11,4 +11,10 @@
         <PackageReference Include="Swashbuckle.AspNetCore" Version="7.3.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\zocoCrm2026Back.Application\zocoCrm2026Back.Application.csproj" />
+      <ProjectReference Include="..\zocoCrm2026Back.Data\zocoCrm2026Back.Data.csproj" />
+      <ProjectReference Include="..\zocoCrm2026Back.Domain\zocoCrm2026Back.Domain.csproj" />
+    </ItemGroup>
+
 </Project>

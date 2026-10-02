@@ -4,6 +4,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "zocoCrm2026Back.Domain", "z
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "zocoCrm2026Back.Api", "zocoCrm2026Back.Api\zocoCrm2026Back.Api.csproj", "{7D80B9EB-F6A3-4035-AE96-5194A5D1791A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "zocoCrm2026Back.Application", "zocoCrm2026Back.Application\zocoCrm2026Back.Application.csproj", "{3C1FDA48-E16A-4FBB-B2DC-9913168E7E23}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "zocoCrm2026Back.Data", "zocoCrm2026Back.Data\zocoCrm2026Back.Data.csproj", "{6B1C6040-29F1-49BF-B453-3B2B8B9F8655}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +22,13 @@ Global
 		{7D80B9EB-F6A3-4035-AE96-5194A5D1791A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D80B9EB-F6A3-4035-AE96-5194A5D1791A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D80B9EB-F6A3-4035-AE96-5194A5D1791A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C1FDA48-E16A-4FBB-B2DC-9913168E7E23}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C1FDA48-E16A-4FBB-B2DC-9913168E7E23}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C1FDA48-E16A-4FBB-B2DC-9913168E7E23}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C1FDA48-E16A-4FBB-B2DC-9913168E7E23}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B1C6040-29F1-49BF-B453-3B2B8B9F8655}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B1C6040-29F1-49BF-B453-3B2B8B9F8655}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B1C6040-29F1-49BF-B453-3B2B8B9F8655}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B1C6040-29F1-49BF-B453-3B2B8B9F8655}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
