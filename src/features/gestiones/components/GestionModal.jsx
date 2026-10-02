@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IconX } from '../../../components/ui/Icons';
+import Modal from '../../../components/ui/Modal';
 
 const estados = ['Prospecto', 'Contactado', 'Interesado', 'No interesado', 'Cliente'];
 
@@ -10,24 +10,7 @@ export default function GestionModal({ cliente, onClose }) {
   const horaActual = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <section
-        className="modal-card"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="gestion-modal-title"
-        onClick={event => event.stopPropagation()}
-      >
-        <header className="modal-header">
-          <div className="modal-header-left">
-            <h2 className="modal-title" id="gestion-modal-title">Nueva gestión</h2>
-            <span className="modal-subtitle">Cliente: <strong>{cliente.nombre}</strong></span>
-          </div>
-          <button className="panel-close-btn" type="button" title="Cerrar ventana" aria-label="Cerrar ventana" onClick={onClose}>
-            <IconX />
-          </button>
-        </header>
-
+    <Modal title="Nueva gestión" subtitle={<>Cliente: <strong>{cliente.nombre}</strong></>} onClose={onClose}>
         <form className="modal-body modal-form" onSubmit={event => event.preventDefault()}>
           <div className="form-group">
             <label className="form-label" htmlFor="gestion-tipo">Tipo de gestión</label>
@@ -75,7 +58,6 @@ export default function GestionModal({ cliente, onClose }) {
             <button className="btn btn-primary" type="submit">Guardar gestión</button>
           </footer>
         </form>
-      </section>
-    </div>
+    </Modal>
   );
 }

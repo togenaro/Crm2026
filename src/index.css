@@ -447,6 +447,7 @@ button {
   background: transparent;
   border: 0;
   border-radius: var(--radius-md);
+  transition: background 0.15s, color 0.15s;
 }
 
 .panel-close-btn:hover {

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   IconAlertTriangle,
   IconCalendar,
@@ -5,6 +6,7 @@ import {
   IconSearch,
   IconUsers,
 } from '../../../components/ui/Icons';
+import ClienteModal from './ClienteModal';
 
 function formatDate(date) {
   if (!date) return '—';
@@ -28,6 +30,8 @@ function statusClass(status) {
 }
 
 export default function ClientesTable({ clientes, totalClientes }) {
+  const [mostrarModal, setMostrarModal] = useState(false);
+
   return (
     <section className="list-container" aria-label="Listado de clientes">
       <div className="table-info-bar">
@@ -54,7 +58,7 @@ export default function ClientesTable({ clientes, totalClientes }) {
             <option>María González</option>
             <option>Carlos Ruiz</option>
           </select>
-          <button className="btn btn-primary btn-sm" type="button">Nuevo cliente</button>
+          <button className="btn btn-primary btn-sm" type="button" onClick={() => setMostrarModal(true)}>Nuevo cliente</button>
         </div>
       </div>
 
@@ -105,6 +109,7 @@ export default function ClientesTable({ clientes, totalClientes }) {
           <button className="page-btn" type="button">Siguiente ›</button>
         </div>
       </footer>
+      {mostrarModal && <ClienteModal onClose={() => setMostrarModal(false)} />}
     </section>
   );
 }
