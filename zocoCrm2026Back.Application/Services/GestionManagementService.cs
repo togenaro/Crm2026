@@ -184,4 +184,79 @@ public class GestionManagementService
             pageSize,
             totalPages);
     }
+
+    public Task<GestionModel.GestionGeneralPagedResponse> GetGestiones(
+        int page = 1,
+        int pageSize = 5,
+        string? search = null,
+        string? tipo = null,
+        string? asesor = null)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 5;
+
+        var query = from gestion in _repository.Query<Gestion>()
+                    join cliente in _repository.Query<Cliente>()
+                        on gestion.ClienteId equals cliente.Id
+                    where cliente.IsActive
+                    select new { Gestion = gestion, Cliente = cliente };
+
+        var asesores = query
+            .Select(item => item.Gestion.Asesor ?? item.Cliente.Asesor)
+            .Where(nombre => !string.IsNullOrEmpty(nombre))
+            .Distinct()
+            .OrderBy(nombre => nombre)
+            .ToList();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var termino = search.Trim().ToLower();
+            query = query.Where(item =>
+                (item.Cliente.Nombre != null && item.Cliente.Nombre.ToLower().Contains(termino)) ||
+                (item.Cliente.Cuit != null && item.Cliente.Cuit.ToLower().Contains(termino)) ||
+                (item.Gestion.Comentario != null && item.Gestion.Comentario.ToLower().Contains(termino)) ||
+                (item.Gestion.Asesor != null && item.Gestion.Asesor.ToLower().Contains(termino)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(tipo)
+            && Enum.TryParse<TipoContacto>(tipo.Replace("ó", "o"), true, out var tipoContacto))
+        {
+            query = query.Where(item => item.Gestion.TipoContacto == tipoContacto);
+        }
+
+        if (!string.IsNullOrWhiteSpace(asesor))
+        {
+            var asesorTerm = asesor.Trim().ToLower();
+            query = query.Where(item =>
+                item.Gestion.Asesor != null && item.Gestion.Asesor.ToLower() == asesorTerm);
+        }
+
+        var totalItems = query.Count();
+        var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+
+        var items = query
+            .OrderByDescending(item => item.Gestion.FechaGestion)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(item => new GestionModel.GestionGeneralResponse(
+                item.Gestion.Id,
+                item.Gestion.ClienteId,
+                item.Cliente.Nombre,
+                item.Cliente.Cuit,
+                item.Gestion.TipoContacto,
+                item.Gestion.Comentario,
+                item.Gestion.EstadoResultante,
+                item.Gestion.FechaGestion,
+                item.Gestion.ProximoContacto,
+                item.Gestion.Asesor ?? item.Cliente.Asesor ?? "Asesor Asignado"))
+            .ToList();
+
+        return Task.FromResult(new GestionModel.GestionGeneralPagedResponse(
+            items,
+            totalItems,
+            page,
+            pageSize,
+            totalPages,
+            asesores!));
+    }
 }
