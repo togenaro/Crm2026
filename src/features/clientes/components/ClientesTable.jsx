@@ -34,6 +34,7 @@ function statusClass(status) {
 
 export default function ClientesTable({
   clientes,
+  todosLosClientes,
   totalClientes,
   busqueda,
   onBusquedaChange,
@@ -42,10 +43,16 @@ export default function ClientesTable({
   asesor,
   onAsesorChange,
   asesores,
+  pagina,
+  totalPaginas,
+  onPaginaChange,
+  numeroInicial,
+  numeroFinal,
+  sortBy,
+  sortDir,
+  onOrdenar,
 }) {
   const navigate = useNavigate();
-  const [sortBy, setSortBy] = useState('proximo');
-  const [sortDir, setSortDir] = useState('asc');
   const [mostrarModal, setMostrarModal] = useState(false);
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
   const [clienteAEditar, setClienteAEditar] = useState(null);
@@ -53,39 +60,14 @@ export default function ClientesTable({
   const todosSeleccionados = clientes.length > 0 && clientes.every(cliente => seleccionados.has(cliente.id));
   const cantidadSeleccionada = seleccionados.size;
   const clienteSeleccionado = cantidadSeleccionada === 1
-    ? clientes.find(cliente => seleccionados.has(cliente.id))
+    ? todosLosClientes.find(cliente => seleccionados.has(cliente.id))
     : null;
-
-  function ordenarPor(columna) {
-    if (columna === sortBy) {
-      setSortDir(actual => actual === 'asc' ? 'desc' : 'asc');
-      return;
-    }
-
-    setSortBy(columna);
-    setSortDir(columna === 'actualizacion' ? 'desc' : 'asc');
-  }
 
   function activarOrdenConTeclado(event, columna) {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
-    ordenarPor(columna);
+    onOrdenar(columna);
   }
-
-  const clientesOrdenados = [...clientes].sort((primero, segundo) => {
-    const valorPrimero = sortBy === 'proximo' ? primero.proximoContacto : primero.fechaActualizacion;
-    const valorSegundo = sortBy === 'proximo' ? segundo.proximoContacto : segundo.fechaActualizacion;
-    const fechaPrimero = valorPrimero ? new Date(valorPrimero).getTime() : Number.NaN;
-    const fechaSegundo = valorSegundo ? new Date(valorSegundo).getTime() : Number.NaN;
-    const primeroSinFecha = Number.isNaN(fechaPrimero);
-    const segundoSinFecha = Number.isNaN(fechaSegundo);
-
-    if (primeroSinFecha && segundoSinFecha) return 0;
-    if (primeroSinFecha) return 1;
-    if (segundoSinFecha) return -1;
-
-    return sortDir === 'asc' ? fechaPrimero - fechaSegundo : fechaSegundo - fechaPrimero;
-  });
 
   function alternarSeleccionTodos() {
     setSeleccionados(actuales => {
@@ -176,7 +158,7 @@ export default function ClientesTable({
                 scope="col"
                 tabIndex={0}
                 aria-sort={sortBy === 'proximo' ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
-                onClick={() => ordenarPor('proximo')}
+                onClick={() => onOrdenar('proximo')}
                 onKeyDown={event => activarOrdenConTeclado(event, 'proximo')}
               >
                 <span className="th-content">
@@ -195,7 +177,7 @@ export default function ClientesTable({
                 scope="col"
                 tabIndex={0}
                 aria-sort={sortBy === 'actualizacion' ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
-                onClick={() => ordenarPor('actualizacion')}
+                onClick={() => onOrdenar('actualizacion')}
                 onKeyDown={event => activarOrdenConTeclado(event, 'actualizacion')}
               >
                 <span className="th-content">
@@ -216,7 +198,7 @@ export default function ClientesTable({
               <tr>
                 <td className="crm-empty-row" colSpan="9">No se encontraron clientes con esos criterios.</td>
               </tr>
-            ) : clientesOrdenados.map(cliente => (
+            ) : clientes.map(cliente => (
               <tr
                 key={cliente.id}
                 className={seleccionados.has(cliente.id) ? 'selected' : ''}
@@ -254,13 +236,36 @@ export default function ClientesTable({
 
       <footer className="pagination-bar">
         <span className="pagination-info">
-          {totalClientes === 0 ? 'No hay resultados' : `Mostrando 1–${clientes.length} de ${totalClientes}`}
+          {totalClientes === 0 ? 'No hay resultados' : `Mostrando ${numeroInicial}–${numeroFinal} de ${totalClientes}`}
         </span>
         <div className="pagination-controls">
-          <button className="page-btn" type="button" disabled>‹ Anterior</button>
-          <button className="page-btn active" type="button" aria-current="page">1</button>
-          <button className="page-btn" type="button">2</button>
-          <button className="page-btn" type="button">Siguiente ›</button>
+          <button
+            className="page-btn"
+            type="button"
+            disabled={pagina === 1}
+            onClick={() => onPaginaChange(actual => Math.max(1, actual - 1))}
+          >
+            ‹ Anterior
+          </button>
+          {Array.from({ length: totalPaginas }, (_, indice) => indice + 1).map(numero => (
+            <button
+              key={numero}
+              className={`page-btn${pagina === numero ? ' active' : ''}`}
+              type="button"
+              aria-current={pagina === numero ? 'page' : undefined}
+              onClick={() => onPaginaChange(numero)}
+            >
+              {numero}
+            </button>
+          ))}
+          <button
+            className="page-btn"
+            type="button"
+            disabled={pagina === totalPaginas}
+            onClick={() => onPaginaChange(actual => Math.min(totalPaginas, actual + 1))}
+          >
+            Siguiente ›
+          </button>
         </div>
       </footer>
       {mostrarModal && <ClienteModal onClose={() => setMostrarModal(false)} />}
