@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+      <UserSecretsId>8f950b62-a85a-477f-ae36-82fe7ab5ba99</UserSecretsId>
+  </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.10" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="7.3.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\zocoCrm2026Back.Application\zocoCrm2026Back.Application.csproj" />
+      <ProjectReference Include="..\zocoCrm2026Back.Data\zocoCrm2026Back.Data.csproj" />
+      <ProjectReference Include="..\zocoCrm2026Back.Domain\zocoCrm2026Back.Domain.csproj" />
+    </ItemGroup>
+
+</Project>
