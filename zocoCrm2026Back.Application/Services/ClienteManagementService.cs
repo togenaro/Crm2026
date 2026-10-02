@@ -174,6 +174,18 @@ public class ClienteManagementService
             cliente.FechaCreacion,
             cliente.FechaActualizacion);
     }
+
+    public async Task DeactivateCliente(Guid id)
+    {
+        var cliente = await _repository.GetById<Cliente>(id);
+        if (cliente == null || !cliente.IsActive)
+            throw new KeyNotFoundException("Cliente no encontrado.");
+
+        cliente.IsActive = false;
+        cliente.FechaActualizacion = DateTime.UtcNow;
+
+        await _repository.Update(cliente);
+    }
     
     private void ValidateRequest(
         string nombre, string cuit, string? email,

@@ -54,4 +54,11 @@ public class ClientesController : ControllerBase
         var cliente = await _clienteService.UpdateCliente(id, request);
         return Ok(cliente);
     }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteCliente(Guid id)
+    {
+        await _clienteService.DeactivateCliente(id);
+        return NoContent();
+    }
 }
