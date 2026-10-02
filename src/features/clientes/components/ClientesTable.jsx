@@ -31,7 +31,17 @@ function statusClass(status) {
   return classes[status] || 'badge-prospecto';
 }
 
-export default function ClientesTable({ clientes, totalClientes }) {
+export default function ClientesTable({
+  clientes,
+  totalClientes,
+  busqueda,
+  onBusquedaChange,
+  estado,
+  onEstadoChange,
+  asesor,
+  onAsesorChange,
+  asesores,
+}) {
   const navigate = useNavigate();
   const [mostrarModal, setMostrarModal] = useState(false);
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
@@ -68,7 +78,10 @@ export default function ClientesTable({ clientes, totalClientes }) {
           {cantidadSeleccionada === 0 ? (
             <>
               <IconUsers />
-              <span>Total Clientes: <strong>{totalClientes} {totalClientes === 1 ? 'cliente' : 'clientes'}</strong></span>
+              <span>
+                Total Clientes: <strong>{totalClientes} {totalClientes === 1 ? 'cliente' : 'clientes'}</strong>
+                {(busqueda.trim() || estado || asesor) && <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}> (filtrado)</span>}
+              </span>
             </>
           ) : (
             <>
@@ -88,9 +101,16 @@ export default function ClientesTable({ clientes, totalClientes }) {
         <div className="table-info-bar-right">
           <label className="search-input-wrap">
             <IconSearch />
-            <input className="search-input" type="search" placeholder="Buscar…" aria-label="Buscar clientes" />
+            <input
+              className="search-input"
+              type="search"
+              placeholder="Buscar…"
+              aria-label="Buscar clientes por nombre, CUIT o teléfono"
+              value={busqueda}
+              onChange={event => onBusquedaChange(event.target.value)}
+            />
           </label>
-          <select className="filter-select" defaultValue="" aria-label="Filtrar por estado">
+          <select className="filter-select" value={estado} onChange={event => onEstadoChange(event.target.value)} aria-label="Filtrar por estado">
             <option value="">Todos los estados</option>
             <option>Prospecto</option>
             <option>Contactado</option>
@@ -98,10 +118,9 @@ export default function ClientesTable({ clientes, totalClientes }) {
             <option>No interesado</option>
             <option>Cliente</option>
           </select>
-          <select className="filter-select" defaultValue="" aria-label="Filtrar por asesor">
+          <select className="filter-select" value={asesor} onChange={event => onAsesorChange(event.target.value)} aria-label="Filtrar por asesor">
             <option value="">Todos los asesores</option>
-            <option>María González</option>
-            <option>Carlos Ruiz</option>
+            {asesores.map(nombreAsesor => <option key={nombreAsesor}>{nombreAsesor}</option>)}
           </select>
           <button className="btn btn-primary btn-sm" type="button" onClick={() => setMostrarModal(true)}>Nuevo cliente</button>
         </div>
@@ -127,7 +146,11 @@ export default function ClientesTable({ clientes, totalClientes }) {
             </tr>
           </thead>
           <tbody>
-            {clientes.map(cliente => (
+            {clientes.length === 0 ? (
+              <tr>
+                <td className="crm-empty-row" colSpan="9">No se encontraron clientes con esos criterios.</td>
+              </tr>
+            ) : clientes.map(cliente => (
               <tr
                 key={cliente.id}
                 className={seleccionados.has(cliente.id) ? 'selected' : ''}
@@ -164,7 +187,9 @@ export default function ClientesTable({ clientes, totalClientes }) {
       </div>
 
       <footer className="pagination-bar">
-        <span className="pagination-info">Mostrando 1–5 de {totalClientes}</span>
+        <span className="pagination-info">
+          {totalClientes === 0 ? 'No hay resultados' : `Mostrando 1–${clientes.length} de ${totalClientes}`}
+        </span>
         <div className="pagination-controls">
           <button className="page-btn" type="button" disabled>‹ Anterior</button>
           <button className="page-btn active" type="button" aria-current="page">1</button>
