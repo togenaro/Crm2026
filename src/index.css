@@ -832,6 +832,10 @@ button {
   cursor: pointer;
 }
 
+.crm-table thead th.sortable:hover {
+  color: var(--text-primary);
+}
+
 .th-content {
   display: flex;
   align-items: center;
@@ -841,7 +845,28 @@ button {
 .th-content svg {
   width: 12px;
   height: 12px;
+}
+
+.th-sort-indicator,
+.th-sort-hint {
+  display: inline-flex;
+  width: 12px;
+  height: 12px;
+  margin-left: 4px;
+}
+
+.th-sort-indicator {
   color: var(--accent);
+}
+
+.th-sort-hint {
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.crm-table thead th.sortable:hover .th-sort-hint {
+  opacity: 0.6;
 }
 
 .crm-table tbody tr {
@@ -872,6 +897,10 @@ button {
   width: 36px;
   padding-right: 4px !important;
   padding-left: 14px !important;
+}
+
+.crm-table .cell-nowrap {
+  white-space: nowrap;
 }
 
 .crm-checkbox {
@@ -938,6 +967,20 @@ button {
 .badge-interesado { color: #065f46; background: #d1fae5; }
 .badge-no_interesado { color: #991b1b; background: #fee2e2; }
 .badge-cliente { color: #6b21a8; background: #f3e8ff; }
+
+.crm-table .badge {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.crm-table .badge-prospecto { color: #94a3b8; }
+.crm-table .badge-contactado { color: #60a5fa; }
+.crm-table .badge-interesado { color: #4ade80; }
+.crm-table .badge-no_interesado { color: #f87171; }
+.crm-table .badge-cliente { color: #c084fc; }
 
 .date-cell {
   display: flex;

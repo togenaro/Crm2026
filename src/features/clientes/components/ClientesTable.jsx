@@ -116,8 +116,12 @@ export default function ClientesTable({ clientes, totalClientes }) {
               <th>Email</th>
               <th>Estado</th>
               <th>Asesor</th>
-              <th className="sortable"><span className="th-content">Próximo Contacto <IconChevronUp /></span></th>
-              <th className="sortable">Última actualización</th>
+              <th className="sortable">
+                <span className="th-content">Próximo Contacto <span className="th-sort-indicator"><IconChevronUp /></span></span>
+              </th>
+              <th className="sortable">
+                <span className="th-content">Última actualización <span className="th-sort-hint"><IconChevronUp /></span></span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -126,8 +130,8 @@ export default function ClientesTable({ clientes, totalClientes }) {
                 <td className="td-check"><input className="crm-checkbox" type="checkbox" aria-label={`Seleccionar ${cliente.nombre}`} checked={seleccionados.has(cliente.id)} onChange={() => alternarSeleccion(cliente.id)} /></td>
                 <td><div className="td-name"><span className="td-avatar">{initials(cliente.nombre)}</span>{cliente.nombre}</div></td>
                 <td className="td-mono">{cliente.cuit}</td>
-                <td className="cell-secondary">{cliente.telefono}</td>
-                <td className="cell-secondary">{cliente.email || '—'}</td>
+                <td className="cell-secondary cell-nowrap">{cliente.telefono}</td>
+                <td className="cell-secondary cell-nowrap">{cliente.email || '—'}</td>
                 <td><span className={`badge ${statusClass(cliente.estado)}`}>{cliente.estado}</span></td>
                 <td className="cell-secondary">{cliente.asesor}</td>
                 <td>
