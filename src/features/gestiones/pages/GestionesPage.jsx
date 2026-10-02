@@ -13,6 +13,32 @@ const tiposContacto = ['Llamada', 'WhatsApp', 'Correo', 'Reunión', 'Otro'];
 
 export default function GestionesPage() {
   const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
+  const [tipo, setTipo] = useState('');
+  const [asesor, setAsesor] = useState('');
+  const [sortDir, setSortDir] = useState('desc');
+  const terminoBusqueda = busqueda.trim().toLocaleLowerCase('es');
+  const asesores = [...new Set(gestionesDemo.map(gestion => gestion.asesor).filter(Boolean))]
+    .sort((primero, segundo) => primero.localeCompare(segundo, 'es'));
+  const gestionesFiltradas = gestionesDemo
+    .filter(gestion => {
+      const coincideBusqueda = !terminoBusqueda || [
+        gestion.clienteNombre,
+        gestion.comentario,
+        gestion.asesor,
+      ].some(valor => valor?.toLocaleLowerCase('es').includes(terminoBusqueda));
+      const coincideTipo = !tipo || gestion.tipoContacto === tipo;
+      const coincideAsesor = !asesor || gestion.asesor === asesor;
+
+      return coincideBusqueda && coincideTipo && coincideAsesor;
+    })
+    .sort((primera, segunda) => {
+      const fechaPrimera = new Date(primera.fechaGestion).getTime();
+      const fechaSegunda = new Date(segunda.fechaGestion).getTime();
+
+      return sortDir === 'desc' ? fechaSegunda - fechaPrimera : fechaPrimera - fechaSegunda;
+    });
+  const hayFiltrosActivos = Boolean(terminoBusqueda || tipo || asesor);
 
   return (
     <div className="gestiones-view">
@@ -37,19 +63,25 @@ export default function GestionesPage() {
                 type="search"
                 placeholder="Buscar por cliente, comentario o asesor…"
                 aria-label="Buscar gestiones"
+                value={busqueda}
+                onChange={event => setBusqueda(event.target.value)}
               />
             </label>
-            <select className="filter-select" defaultValue="" aria-label="Filtrar por tipo">
+            <select className="filter-select" value={tipo} onChange={event => setTipo(event.target.value)} aria-label="Filtrar por tipo">
               <option value="">Todos los tipos</option>
               {tiposContacto.map(tipo => <option key={tipo}>{tipo}</option>)}
             </select>
-            <select className="filter-select" defaultValue="" aria-label="Filtrar por asesor">
+            <select className="filter-select" value={asesor} onChange={event => setAsesor(event.target.value)} aria-label="Filtrar por asesor">
               <option value="">Todos los asesores</option>
-              <option>María González</option>
-              <option>Carlos Ruiz</option>
+              {asesores.map(nombre => <option key={nombre}>{nombre}</option>)}
             </select>
-            <button className="btn btn-outline btn-sm" type="button">
-              <IconArrowUpDown /> Recientes
+            <button
+              className="btn btn-outline btn-sm"
+              type="button"
+              title="Cambiar orden por fecha"
+              onClick={() => setSortDir(actual => actual === 'desc' ? 'asc' : 'desc')}
+            >
+              <IconArrowUpDown /> {sortDir === 'desc' ? 'Recientes' : 'Antiguas'}
             </button>
             <button className="btn btn-primary btn-sm" type="button" onClick={() => setMostrarModalGestion(true)}>
               Nueva gestión
@@ -58,7 +90,9 @@ export default function GestionesPage() {
         </div>
 
         <div className="full-history-list">
-          {gestionesDemo.map(gestion => {
+          {gestionesFiltradas.length === 0 ? (
+            <p className="pagination-info">No se encontraron gestiones con esos criterios.</p>
+          ) : gestionesFiltradas.map(gestion => {
             const cliente = clientesDisponiblesDemo.find(item => item.cuit === gestion.clienteCuit);
 
             return (
@@ -68,7 +102,11 @@ export default function GestionesPage() {
         </div>
 
         <footer className="pagination-bar">
-          <span className="pagination-info">Mostrando 1–5 de {totalGestionesDemo}</span>
+          <span className="pagination-info">
+            {hayFiltrosActivos
+              ? `${gestionesFiltradas.length} ${gestionesFiltradas.length === 1 ? 'resultado' : 'resultados'}`
+              : `Mostrando 1–5 de ${totalGestionesDemo}`}
+          </span>
           <div className="pagination-controls">
             <button className="page-btn" type="button" disabled>‹ Anterior</button>
             <button className="page-btn active" type="button" aria-current="page">1</button>
