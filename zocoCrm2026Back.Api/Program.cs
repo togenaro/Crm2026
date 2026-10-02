@@ -1,6 +1,5 @@
 using zocoCrm2026Back.Application.Services;
-using zocoCrm2026Back.Data.Repositories;
-using zocoCrm2026Back.Domain.Interfaces;
+using zocoCrm2026Back.Data;
 using zocoCrm2026Back.Api.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,7 +15,7 @@ builder.Services.AddControllers()
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddSingleton<IRepository, InMemoryRepository>();
+builder.Services.AddPersistence();
 builder.Services.AddScoped<ClienteManagementService>();
 builder.Services.AddScoped<GestionManagementService>();
 builder.Services.AddScoped<DashboardService>();

@@ -17,20 +17,14 @@ public class EfRepository : IRepository
     public async Task<T?> GetById<T>(Guid id, params string[] include)
         where T : EntityBase
     {
-        IQueryable<T> query = _context.Set<T>();
-        foreach (var path in include)
-            query = query.Include(path);
-
+        var query = Include(_context.Set<T>(), include);
         return await query.FirstOrDefaultAsync(entity => entity.Id == id);
     }
 
     public async Task<IEnumerable<T>?> GetAll<T>(params string[] include)
         where T : EntityBase
     {
-        IQueryable<T> query = _context.Set<T>();
-        foreach (var path in include)
-            query = query.Include(path);
-
+        var query = Include(_context.Set<T>(), include);
         return await query.ToListAsync();
     }
 
@@ -39,10 +33,7 @@ public class EfRepository : IRepository
         params string[] include)
         where T : EntityBase
     {
-        IQueryable<T> query = _context.Set<T>();
-        foreach (var path in include)
-            query = query.Include(path);
-
+        var query = Include(_context.Set<T>(), include);
         return await query.FirstOrDefaultAsync(predicate);
     }
 
@@ -51,36 +42,45 @@ public class EfRepository : IRepository
         params string[] include)
         where T : EntityBase
     {
-        IQueryable<T> query = _context.Set<T>();
-        foreach (var path in include)
-            query = query.Include(path);
-
+        var query = Include(_context.Set<T>(), include);
         return await query.Where(predicate).ToListAsync();
     }
 
     public async Task<T> Add<T>(T entity) where T : EntityBase
     {
         await _context.AddAsync(entity);
-        await _context.SaveChangesAsync();
-        return entity;
+        return await SaveAndReturnAsync(entity);
     }
 
     public async Task<T> Update<T>(T entity) where T : EntityBase
     {
         _context.Update(entity);
-        await _context.SaveChangesAsync();
-        return entity;
+        return await SaveAndReturnAsync(entity);
     }
 
     public async Task<T> Delete<T>(T entity) where T : EntityBase
     {
         _context.Remove(entity);
-        await _context.SaveChangesAsync();
-        return entity;
+        return await SaveAndReturnAsync(entity);
     }
 
     public IQueryable<T> Query<T>() where T : EntityBase
     {
         return _context.Set<T>();
+    }
+
+    private static IQueryable<T> Include<T>(IQueryable<T> query, string[] paths)
+        where T : EntityBase
+    {
+        foreach (var path in paths)
+            query = query.Include(path);
+
+        return query;
+    }
+
+    private async Task<T> SaveAndReturnAsync<T>(T entity) where T : EntityBase
+    {
+        await _context.SaveChangesAsync();
+        return entity;
     }
 }
