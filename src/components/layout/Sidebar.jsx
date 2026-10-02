@@ -34,7 +34,7 @@ function LogoutIcon() {
   );
 }
 
-function SidebarItem({ label, children, active = false }) {
+function SidebarItem({ label, children, active }) {
   return (
     <button
       className={`sidebar-nav-item${active ? ' active' : ''}`}
@@ -48,7 +48,7 @@ function SidebarItem({ label, children, active = false }) {
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ activeItem = 'Clientes' }) {
   return (
     <aside className="sidebar" aria-label="Navegación principal">
       <button className="sidebar-hamburger" type="button" aria-label="Menú">
@@ -56,10 +56,10 @@ export default function Sidebar() {
       </button>
 
       <nav className="sidebar-nav">
-        <SidebarItem label="Clientes" active>
+        <SidebarItem label="Clientes" active={activeItem === 'Clientes'}>
           <UsersIcon />
         </SidebarItem>
-        <SidebarItem label="Gestiones">
+        <SidebarItem label="Gestiones" active={activeItem === 'Gestiones'}>
           <CalendarIcon />
         </SidebarItem>
       </nav>

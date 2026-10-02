@@ -46,3 +46,7 @@ export function IconChevronUp(props) {
 export function IconChevronDown(props) {
   return <IconFrame {...props}><path d="m6 9 6 6 6-6" /></IconFrame>;
 }
+
+export function IconArrowUpDown(props) {
+  return <IconFrame {...props}><path d="m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16" /></IconFrame>;
+}
