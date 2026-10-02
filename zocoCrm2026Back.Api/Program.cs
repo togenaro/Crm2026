@@ -1,3 +1,7 @@
+using zocoCrm2026Back.Application.Services;
+using zocoCrm2026Back.Data.Repositories;
+using zocoCrm2026Back.Domain.Interfaces;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -11,6 +15,8 @@ builder.Services.AddControllers()
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<IRepository, InMemoryRepository>();
+builder.Services.AddScoped<ClienteManagementService>();
 
 var app = builder.Build();
 
