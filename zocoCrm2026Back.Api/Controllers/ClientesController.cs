@@ -10,10 +10,14 @@ namespace zocoCrm2026Back.Api.Controllers;
 public class ClientesController : ControllerBase
 {
     private readonly ClienteManagementService _clienteService;
+    private readonly GestionManagementService _gestionService;
 
-    public ClientesController(ClienteManagementService clienteService)
+    public ClientesController(
+        ClienteManagementService clienteService,
+        GestionManagementService gestionService)
     {
         _clienteService = clienteService;
+        _gestionService = gestionService;
     }
 
     [HttpGet]
@@ -60,5 +64,15 @@ public class ClientesController : ControllerBase
     {
         await _clienteService.DeactivateCliente(id);
         return NoContent();
+    }
+
+    [HttpGet("{id}/gestiones")]
+    public async Task<IActionResult> GetGestiones(
+        Guid id,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 5)
+    {
+        var result = await _gestionService.GetGestiones(id, page, pageSize);
+        return Ok(result);
     }
 }

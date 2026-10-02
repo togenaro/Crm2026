@@ -18,6 +18,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<IRepository, InMemoryRepository>();
 builder.Services.AddScoped<ClienteManagementService>();
+builder.Services.AddScoped<GestionManagementService>();
 
 var app = builder.Build();
 
@@ -34,4 +35,3 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
-
