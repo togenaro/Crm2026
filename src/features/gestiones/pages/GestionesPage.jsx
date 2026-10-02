@@ -10,6 +10,7 @@ import { clientesDisponiblesDemo } from '../../clientes/data/clientesDemo';
 import { gestionesDemo, totalGestionesDemo } from '../data/gestionesDemo';
 
 const tiposContacto = ['Llamada', 'WhatsApp', 'Correo', 'Reunión', 'Otro'];
+const TAMANO_PAGINA = 5;
 
 export default function GestionesPage() {
   const [mostrarModalGestion, setMostrarModalGestion] = useState(false);
@@ -17,6 +18,7 @@ export default function GestionesPage() {
   const [tipo, setTipo] = useState('');
   const [asesor, setAsesor] = useState('');
   const [sortDir, setSortDir] = useState('desc');
+  const [pagina, setPagina] = useState(1);
   const terminoBusqueda = busqueda.trim().toLocaleLowerCase('es');
   const asesores = [...new Set(gestionesDemo.map(gestion => gestion.asesor).filter(Boolean))]
     .sort((primero, segundo) => primero.localeCompare(segundo, 'es'));
@@ -39,6 +41,11 @@ export default function GestionesPage() {
       return sortDir === 'desc' ? fechaSegunda - fechaPrimera : fechaPrimera - fechaSegunda;
     });
   const hayFiltrosActivos = Boolean(terminoBusqueda || tipo || asesor);
+  const totalPaginas = Math.max(1, Math.ceil(gestionesFiltradas.length / TAMANO_PAGINA));
+  const indiceInicial = (pagina - 1) * TAMANO_PAGINA;
+  const gestionesVisibles = gestionesFiltradas.slice(indiceInicial, indiceInicial + TAMANO_PAGINA);
+  const numeroInicial = gestionesFiltradas.length === 0 ? 0 : indiceInicial + 1;
+  const numeroFinal = Math.min(indiceInicial + TAMANO_PAGINA, gestionesFiltradas.length);
 
   return (
     <div className="gestiones-view">
@@ -64,14 +71,23 @@ export default function GestionesPage() {
                 placeholder="Buscar por cliente, comentario o asesor…"
                 aria-label="Buscar gestiones"
                 value={busqueda}
-                onChange={event => setBusqueda(event.target.value)}
+                onChange={event => {
+                  setBusqueda(event.target.value);
+                  setPagina(1);
+                }}
               />
             </label>
-            <select className="filter-select" value={tipo} onChange={event => setTipo(event.target.value)} aria-label="Filtrar por tipo">
+            <select className="filter-select" value={tipo} onChange={event => {
+              setTipo(event.target.value);
+              setPagina(1);
+            }} aria-label="Filtrar por tipo">
               <option value="">Todos los tipos</option>
               {tiposContacto.map(tipo => <option key={tipo}>{tipo}</option>)}
             </select>
-            <select className="filter-select" value={asesor} onChange={event => setAsesor(event.target.value)} aria-label="Filtrar por asesor">
+            <select className="filter-select" value={asesor} onChange={event => {
+              setAsesor(event.target.value);
+              setPagina(1);
+            }} aria-label="Filtrar por asesor">
               <option value="">Todos los asesores</option>
               {asesores.map(nombre => <option key={nombre}>{nombre}</option>)}
             </select>
@@ -79,7 +95,10 @@ export default function GestionesPage() {
               className="btn btn-outline btn-sm"
               type="button"
               title="Cambiar orden por fecha"
-              onClick={() => setSortDir(actual => actual === 'desc' ? 'asc' : 'desc')}
+              onClick={() => {
+                setSortDir(actual => actual === 'desc' ? 'asc' : 'desc');
+                setPagina(1);
+              }}
             >
               <IconArrowUpDown /> {sortDir === 'desc' ? 'Recientes' : 'Antiguas'}
             </button>
@@ -92,7 +111,7 @@ export default function GestionesPage() {
         <div className="full-history-list">
           {gestionesFiltradas.length === 0 ? (
             <p className="pagination-info">No se encontraron gestiones con esos criterios.</p>
-          ) : gestionesFiltradas.map(gestion => {
+          ) : gestionesVisibles.map(gestion => {
             const cliente = clientesDisponiblesDemo.find(item => item.cuit === gestion.clienteCuit);
 
             return (
@@ -103,16 +122,28 @@ export default function GestionesPage() {
 
         <footer className="pagination-bar">
           <span className="pagination-info">
-            {hayFiltrosActivos
-              ? `${gestionesFiltradas.length} ${gestionesFiltradas.length === 1 ? 'resultado' : 'resultados'}`
-              : `Mostrando 1–5 de ${totalGestionesDemo}`}
+            {gestionesFiltradas.length === 0
+              ? '0 resultados'
+              : `Mostrando ${numeroInicial}–${numeroFinal} de ${gestionesFiltradas.length}${hayFiltrosActivos ? ' resultados' : ''}`}
           </span>
           <div className="pagination-controls">
-            <button className="page-btn" type="button" disabled>‹ Anterior</button>
-            <button className="page-btn active" type="button" aria-current="page">1</button>
-            <button className="page-btn" type="button">2</button>
-            <button className="page-btn" type="button">3</button>
-            <button className="page-btn" type="button">Siguiente ›</button>
+            <button className="page-btn" type="button" disabled={pagina === 1} onClick={() => setPagina(actual => Math.max(1, actual - 1))}>
+              ‹ Anterior
+            </button>
+            {Array.from({ length: totalPaginas }, (_, indice) => indice + 1).map(numero => (
+              <button
+                key={numero}
+                className={`page-btn${pagina === numero ? ' active' : ''}`}
+                type="button"
+                aria-current={pagina === numero ? 'page' : undefined}
+                onClick={() => setPagina(numero)}
+              >
+                {numero}
+              </button>
+            ))}
+            <button className="page-btn" type="button" disabled={pagina === totalPaginas} onClick={() => setPagina(actual => Math.min(totalPaginas, actual + 1))}>
+              Siguiente ›
+            </button>
           </div>
         </footer>
       </section>
