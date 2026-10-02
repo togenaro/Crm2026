@@ -189,7 +189,7 @@ export default function ClienteDetailPage({ clientes, gestiones, cargando, carga
         />
       )}
       {mostrarModalCliente && (
-        <ClienteModal initial={cliente} onClose={() => setMostrarModalCliente(false)} onGuardar={datos => onGuardarCliente(datos, cliente.id)} />
+        <ClienteModal clientes={clientes} initial={cliente} onClose={() => setMostrarModalCliente(false)} onGuardar={datos => onGuardarCliente(datos, cliente.id)} />
       )}
     </div>
   );

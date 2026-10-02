@@ -258,8 +258,8 @@ export default function ClientesTable({
           onPageChange={onPaginaChange}
         />
       )}
-      {mostrarModal && <ClienteModal onGuardar={datos => onGuardarCliente(datos)} onClose={() => setMostrarModal(false)} />}
-      {clienteAEditar && <ClienteModal initial={clienteAEditar} onGuardar={datos => onGuardarCliente(datos, clienteAEditar.id)} onClose={() => setClienteAEditar(null)} />}
+      {mostrarModal && <ClienteModal clientes={todosLosClientes} onGuardar={datos => onGuardarCliente(datos)} onClose={() => setMostrarModal(false)} />}
+      {clienteAEditar && <ClienteModal clientes={todosLosClientes} initial={clienteAEditar} onGuardar={datos => onGuardarCliente(datos, clienteAEditar.id)} onClose={() => setClienteAEditar(null)} />}
       {mostrarConfirmacion && (
         <Modal title={`Eliminar ${cantidadSeleccionada} cliente(s)`} onClose={() => setMostrarConfirmacion(false)}>
           <div className="modal-body modal-form">

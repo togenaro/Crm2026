@@ -4,14 +4,42 @@ import ApiErrorList from '../../../components/ui/ApiErrorList';
 
 const estados = ['Prospecto', 'Contactado', 'Interesado', 'No interesado', 'Cliente'];
 
-export default function ClienteModal({ initial = null, onClose, onGuardar }) {
+export default function ClienteModal({ initial = null, clientes = [], onClose, onGuardar }) {
   const isEdit = initial !== null;
-  const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
   const [erroresCampo, setErroresCampo] = useState({});
+  const [intentoEnvio, setIntentoEnvio] = useState(false);
+
+  function obtenerErrorCampo(nombre, valor) {
+    if (nombre === 'nombre' && !valor.trim()) return 'El nombre es obligatorio.';
+    if (nombre === 'cuit') {
+      if (!valor.trim()) return 'El CUIT es obligatorio.';
+      const duplicado = clientes.some(cliente =>
+        (cliente.cuit || '').trim() === valor.trim()
+        && String(cliente.id) !== String(initial?.id),
+      );
+      if (duplicado) return 'Ya existe un cliente con ese CUIT.';
+    }
+    if (nombre === 'email' && valor && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor)) {
+      return 'Formato de email inválido.';
+    }
+    return '';
+  }
+
+  function validarCambio(nombre, valor) {
+    setErroresCampo(actuales => {
+      if (!intentoEnvio && !Object.hasOwn(actuales, nombre)) return actuales;
+      const siguientes = { ...actuales };
+      const errorCampo = obtenerErrorCampo(nombre, valor);
+      if (errorCampo) siguientes[nombre] = errorCampo;
+      else delete siguientes[nombre];
+      return siguientes;
+    });
+  }
 
   async function guardar(event) {
     event.preventDefault();
+    setIntentoEnvio(true);
     const campos = new FormData(event.currentTarget);
     const datos = {
       nombre: campos.get('nombre').trim(),
@@ -21,16 +49,14 @@ export default function ClienteModal({ initial = null, onClose, onGuardar }) {
       estado: campos.get('estado'),
       asesor: campos.get('asesor').trim(),
     };
-    const errores = {};
-    if (!datos.nombre) errores.nombre = 'El nombre es obligatorio.';
-    if (!datos.cuit) errores.cuit = 'El CUIT es obligatorio.';
-    if (datos.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.email)) {
-      errores.email = 'Formato de email inválido.';
-    }
+    const errores = Object.fromEntries(
+      ['nombre', 'cuit', 'email']
+        .map(nombre => [nombre, obtenerErrorCampo(nombre, datos[nombre])])
+        .filter(([, mensaje]) => mensaje),
+    );
     setErroresCampo(errores);
     if (Object.keys(errores).length > 0) return;
 
-    setGuardando(true);
     setError('');
 
     try {
@@ -38,8 +64,6 @@ export default function ClienteModal({ initial = null, onClose, onGuardar }) {
       onClose();
     } catch (errorGuardado) {
       setError(errorGuardado.message);
-    } finally {
-      setGuardando(false);
     }
   }
 
@@ -49,13 +73,13 @@ export default function ClienteModal({ initial = null, onClose, onGuardar }) {
         <ApiErrorList errors={error ? [error] : []} />
         <div className="form-group">
           <label className="form-label" htmlFor="cliente-nombre">Nombre *</label>
-          <input className="search-input" id="cliente-nombre" name="nombre" placeholder="Nombre del cliente…" defaultValue={initial?.nombre ?? ''} />
+          <input className="search-input" id="cliente-nombre" name="nombre" placeholder="Nombre del cliente…" defaultValue={initial?.nombre ?? ''} onChange={event => validarCambio('nombre', event.target.value)} />
           {erroresCampo.nombre && <span className="form-error">{erroresCampo.nombre}</span>}
         </div>
 
         <div className="form-group">
           <label className="form-label" htmlFor="cliente-cuit">CUIT *</label>
-          <input className="search-input" id="cliente-cuit" name="cuit" placeholder="30-12345678-9" defaultValue={initial?.cuit ?? ''} />
+          <input className="search-input" id="cliente-cuit" name="cuit" placeholder="30-12345678-9" defaultValue={initial?.cuit ?? ''} onChange={event => validarCambio('cuit', event.target.value)} />
           {erroresCampo.cuit && <span className="form-error">{erroresCampo.cuit}</span>}
         </div>
 
@@ -66,7 +90,7 @@ export default function ClienteModal({ initial = null, onClose, onGuardar }) {
 
         <div className="form-group">
           <label className="form-label" htmlFor="cliente-email">Email</label>
-          <input className="search-input" id="cliente-email" name="email" placeholder="contacto@empresa.com" defaultValue={initial?.email ?? ''} />
+          <input className="search-input" id="cliente-email" name="email" placeholder="contacto@empresa.com" defaultValue={initial?.email ?? ''} onChange={event => validarCambio('email', event.target.value)} />
           {erroresCampo.email && <span className="form-error">{erroresCampo.email}</span>}
         </div>
 
@@ -86,7 +110,7 @@ export default function ClienteModal({ initial = null, onClose, onGuardar }) {
         <footer className="modal-form-actions">
           <span className="form-required-legend">* Campos obligatorios</span>
           <button className="btn btn-outline" type="button" onClick={onClose}>Cancelar</button>
-          <button className="btn btn-primary" type="submit" disabled={guardando}>{guardando ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Guardar cliente'}</button>
+          <button className="btn btn-primary" type="submit">{isEdit ? 'Guardar cambios' : 'Guardar cliente'}</button>
         </footer>
       </form>
     </Modal>
