@@ -2,6 +2,9 @@
 
 Aplicación para administrar clientes, registrar gestiones comerciales y consultar próximos seguimientos. El frontend React y el backend ASP.NET Core se organizan como carpetas independientes dentro de este mismo repositorio.
 
+## 🎬 Video
+[![Ver video demostrativo](https://icons8.com)](https://drive.google.com/file/d/1ungjSUbcLrUPMWBaKlLVbOdGSlb9KYri/view?usp=sharing)
+
 ## Índice
 
 1. [Requisitos necesarios para ejecutar el proyecto](#requisitos-necesarios-para-ejecutar-el-proyecto)
@@ -73,7 +76,19 @@ Vite informa en la terminal la dirección local para abrir en el navegador. Axio
 
 ## Configuración de la base de datos
 
-El backend usa SQL Server mediante Entity Framework Core. El proyecto ya tiene habilitado User Secrets. Desde la raíz del proyecto backend, guardá una cadena de conexión para una instancia local que escuche en el puerto `1433` y use autenticación SQL:
+El backend usa SQL Server mediante Entity Framework Core. Si no tenés una instancia en ejecución, levantala con Docker (recomendado):
+
+```bash
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=<tu-password>" -p 1433:1433 --name zoco-sql -d mcr.microsoft.com/mssql/server:2022-latest
+```
+
+Reemplazá `<tu-password>` por una contraseña fuerte (mínimo 8 caracteres, con mayúsculas, minúsculas, números y símbolos, como exige SQL Server) y usá esa misma en la cadena de conexión de abajo. Verificá que quedó corriendo con `docker ps` (tiene que figurar `zoco-sql` en `1433`). Si el contenedor ya existe de antes, en vez de crearlo iniciálo con `docker start zoco-sql`.
+
+Este comando levanta solo el motor vacío; la base, las tablas y los datos los crean tus migraciones y el seed de los pasos siguientes.
+
+El proyecto ya tiene habilitado User Secrets. Desde la raíz del proyecto backend, guardá una cadena de conexión para una instancia local que escuche en el puerto `1433` y use autenticación SQL:
+
+```bash
 
 ```bash
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=ZocoCrm;User Id=sa;Password=<tu-password>;TrustServerCertificate=True;" --project zocoCrm2026Back.Api
